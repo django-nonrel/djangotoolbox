@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from .utils import object_list_to_table, equal_lists
 from django.test import TestCase as DjangoTestCase
 from google.appengine.ext import db

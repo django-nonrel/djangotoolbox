@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from django.utils._threading_local import local
 
 def make_tls_property(default=None):
