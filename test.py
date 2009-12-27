@@ -1,21 +1,5 @@
 from .utils import object_list_to_table, equal_lists
-from django.test import TestCase as DjangoTestCase
-from google.appengine.ext import db
-import os
-import unittest
-
-class TestCase(DjangoTestCase):
-    def setUp(self):
-        self.setup()
-
-    def tearDown(self):
-        self.teardown()
-
-    def setup(self):
-        pass
-
-    def teardown(self):
-        pass
+from django.test import TestCase
 
 class ModelTestCase(TestCase):
     """

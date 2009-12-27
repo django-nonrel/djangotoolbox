@@ -1,4 +1,4 @@
-from django.utils._threading_local import local
+from threading import local
 
 def make_tls_property(default=None):
     """Creates a class-wide instance property with a thread-specific value."""
