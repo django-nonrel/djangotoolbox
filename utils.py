@@ -1,9 +1,8 @@
-from threading import local
-
 def make_tls_property(default=None):
     """Creates a class-wide instance property with a thread-specific value."""
     class TLSProperty(object):
         def __init__(self):
+            from threading import local
             self.local = local()
 
         def __get__(self, instance, cls):
