@@ -7,6 +7,8 @@ from django.test import TestCase
 class ListModel(models.Model):
     floating_point = models.FloatField()
     names = ListField(models.CharField(max_length=500))
+    names_with_default = ListField(models.CharField(max_length=500), default=())
+    names_nullable = ListField(models.CharField(max_length=500), null=True)
 
 class FilterTest(TestCase):
     floats = [5.3, 2.6, 9.1, 1.58]
@@ -21,6 +23,16 @@ class FilterTest(TestCase):
                           ListModel.objects.filter(names__startswith='Sa')],
                           [['Kakashi', 'Naruto', 'Sasuke',],
                             ['Kakashi', 'Naruto', 'Sasuke', 'Sakura',]])
+
+    def test_options(self):
+        self.assertEquals([entity.names_with_default for entity in
+                          ListModel.objects.filter(names__startswith='Sa')],
+                          [(), ()])
+
+        # TODO: should it be NULL or None here?
+        self.assertEquals([entity.names_nullable for entity in
+                          ListModel.objects.filter(names__startswith='Sa')],
+                          [None, None])
 
     def test_gt(self):
         # test gt on list
