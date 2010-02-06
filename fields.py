@@ -25,7 +25,7 @@ class ListField(models.Field):
         if self.null:
             return None
         return []
-    
+
 #    def pre_save(self, model_instance, add):
 #        pass
 

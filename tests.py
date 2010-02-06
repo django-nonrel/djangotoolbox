@@ -7,7 +7,7 @@ from django.test import TestCase
 class ListModel(models.Model):
     floating_point = models.FloatField()
     names = ListField(models.CharField(max_length=500))
-    names_with_default = ListField(models.CharField(max_length=500), default=())
+    names_with_default = ListField(models.CharField(max_length=500), default=[])
     names_nullable = ListField(models.CharField(max_length=500), null=True)
 
 class FilterTest(TestCase):
@@ -27,7 +27,7 @@ class FilterTest(TestCase):
     def test_options(self):
         self.assertEquals([entity.names_with_default for entity in
                           ListModel.objects.filter(names__startswith='Sa')],
-                          [(), ()])
+                          [[], []])
 
         # TODO: should it be NULL or None here?
         self.assertEquals([entity.names_nullable for entity in
