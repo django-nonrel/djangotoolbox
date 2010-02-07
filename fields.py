@@ -3,6 +3,7 @@ from django.db import models
 class ListField(models.Field):
     def __init__(self, field_type, *args, **kwargs):
         self.field_type = field_type
+        kwargs['default'] = lambda: None if self.null else []
         super(ListField, self).__init__(*args, **kwargs)
 
     def db_type(self, connection):
@@ -14,17 +15,6 @@ class ListField(models.Field):
                 values[i] = getattr(self.field_type, function_name)(value, *args,
                     **kwargs)
         return values
-
-    def get_default(self):
-#        Django converts default values different from types.NoneType, int, long,
-#        datetime.datetime, datetime.date, datetime.time, float, Decimal to strings
-        if self.has_default():
-            if callable(self.default):
-                return self.default()
-            return self.default
-        if self.null:
-            return None
-        return []
 
 #    def pre_save(self, model_instance, add):
 #        pass
