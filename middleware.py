@@ -21,6 +21,23 @@ class LoginRequiredMiddleware(object):
                 return redirect_to_login(request.get_full_path())
         return None
 
+class RedirectMiddleware(object):
+    """
+    A static redirect middleware. Mostly useful for hosting providers that
+    automatically setup an alternative domain for your website. You might
+    not want anyone to access the site via those possibly well-known URLs.
+    """
+    def process_request(self, request):
+        host = request.get_host().split(':')[0]
+        # Turn off redirects when in debug mode, running unit tests, or
+        # when handling an App Engine cron job.
+        if settings.DEBUG or host == 'testserver' or \
+                not getattr(settings, 'ALLOWED_DOMAINS', None) or \
+                request.META.get('HTTP_X_APPENGINE_CRON') == 'true':
+            return
+        if host not in settings.ALLOWED_DOMAINS:
+            return HttpResponseRedirect('http://' + settings.ALLOWED_DOMAINS[0])
+
 class NoHistoryCacheMiddleware(object):
     """
     If user is authenticated we disable browser caching of pages in history.
