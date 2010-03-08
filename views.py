@@ -1,5 +1,4 @@
 from copy import deepcopy
-from django.views.generic.simple import direct_to_template
 import functools, re
 
 PATTERNS = {
@@ -60,21 +59,16 @@ class URLPatternGenerator(object):
 easyurl = URLPatternGenerator()
 regex = easyurl.regex
 
+class ClassFunction(object):
+    def __new__(cls, *args, **kwargs):
+        obj = super(ClassFunction, cls).__new__(cls)
+        return obj(*args, **kwargs)
+
+    def __call__(self, *args, **kwargs):
+        pass
+
 class Views(object):
     urlpatterns = patterns('', )
-
-    def __init__(self):
-        self._urlpatterns = urlpatterns.copy()
-
-    # Emulate urlpatterns behavior
-    def __iter__(self):
-        return self._urlpatterns.__iter__()
-
-    def __getitem__(self, index):
-        return self._urlpatterns[index]
-
-    def __len__(self):
-        return len(self._urlpatterns)
 
     def __call__(self, request, *args, **kwargs):
         pass
