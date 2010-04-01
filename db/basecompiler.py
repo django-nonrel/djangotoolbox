@@ -21,15 +21,33 @@ EMULATED_OPS = {
 }
 
 class NonrelQuery(object):
+    # ----------------------------------------------
+    # Public API
+    # ----------------------------------------------
     def __init__(self, compiler, fields):
         self.fields = fields
         self.compiler = compiler
         self.connection = compiler.connection
         self.query = self.compiler.query
         self.ordering = ()
-        self.db_table = self.query.get_meta().db_table
         self.limits = self.query.low_mark, self.query.high_mark
         self._negated = False
+
+    def fetch(self):
+        raise NotImplementedError('Not implemented')
+
+    def count(self, limit=None):
+        raise NotImplementedError('Not implemented')
+
+    def delete(self):
+        raise NotImplementedError('Not implemented')
+
+    def order_by(self, ordering):
+        raise NotImplementedError('Not implemented')
+
+    # Used by add_filters()
+    def add_filter(self, column, lookup_type, negated, db_type, value):
+        raise NotImplementedError('Not implemented')
 
     # This is just a default implementation. You might want to override this
     # in case your backend supports OR queries
@@ -62,6 +80,9 @@ class NonrelQuery(object):
         if filters.negated:
             self._negated = not self._negated
 
+    # ----------------------------------------------
+    # Internal API for reuse by subclasses
+    # ----------------------------------------------
     def _decode_child(self, child):
         constraint, lookup_type, annotation, value = child
         packed, value = constraint.process(lookup_type, value, self.connection)
