@@ -1,0 +1,31 @@
+from django.db.backends.creation import BaseDatabaseCreation
+
+class NonrelDatabaseCreation(BaseDatabaseCreation):
+    data_types = {
+        'DateTimeField':     'datetime',
+        'DateField':         'date',
+        'TimeField':         'time',
+        'FloatField':        'float',
+        'EmailField':        'email',
+        'URLField':          'link',
+        'BooleanField':      'bool',
+        'NullBooleanField':  'bool',
+        'CharField':         'text',
+        'CommaSeparatedIntegerField': 'text',
+        'IPAddressField':    'text',
+        'SlugField':         'text',
+        'FileField':         'text',
+        'FilePathField':     'text',
+        'TextField':         'longtext',
+        'XMLField':          'longtext',
+        'IntegerField':      'integer',
+        'SmallIntegerField': 'integer',
+        'PositiveIntegerField': 'integer',
+        'PositiveSmallIntegerField': 'integer',
+        'BigIntegerField':   'long',
+        'AutoField':         'integer',
+        'OneToOneField':     'integer',
+        'DecimalField':      'decimal',
+        'BlobField':         'blob',
+#        'ImageField':
+    }
