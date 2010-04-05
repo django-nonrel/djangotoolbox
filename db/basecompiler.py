@@ -30,10 +30,9 @@ class NonrelQuery(object):
         self.connection = compiler.connection
         self.query = self.compiler.query
         self.ordering = ()
-        self.limits = self.query.low_mark, self.query.high_mark
         self._negated = False
 
-    def fetch(self):
+    def fetch(self, low_mark=0, high_mark=None):
         raise NotImplementedError('Not implemented')
 
     def count(self, limit=None):
@@ -205,7 +204,9 @@ class NonrelCompiler(SQLCompiler):
         Returns an iterator over the results from executing this query.
         """
         fields = self.get_fields()
-        for entity in self.build_query(fields).fetch():
+        low_mark = self.query.low_mark
+        high_mark = self.query.high_mark
+        for entity in self.build_query(fields).fetch(low_mark, high_mark):
             yield self._make_result(entity, fields)
 
     def _make_result(self, entity, fields):
