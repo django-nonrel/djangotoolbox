@@ -8,7 +8,7 @@ from django.utils.tree import Node
 import random
 
 EMULATED_OPS = {
-    'exact': lambda x, y: x == y,
+    'exact': lambda x, y: y in x if isinstance(x, (list,tuple)) else x == y,
     'iexact': lambda x, y: x.lower() == y.lower(),
     'startswith': lambda x, y: x.startswith(y),
     'istartswith': lambda x, y: x.lower().startswith(y.lower()),
