@@ -8,7 +8,6 @@ from .creation import NonrelDatabaseCreation
 class NonrelDatabaseFeatures(BaseDatabaseFeatures):
     distinguishes_insert_from_update = False
     supports_deleting_related_objects = False
-    supports_multi_table_inheritance = False
 
 class NonrelDatabaseOperations(BaseDatabaseOperations):
     def quote_name(self, name):
