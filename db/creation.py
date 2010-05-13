@@ -25,7 +25,7 @@ class NonrelDatabaseCreation(BaseDatabaseCreation):
         'BigIntegerField':   'long',
         'AutoField':         'integer',
         'OneToOneField':     'integer',
-        'DecimalField':      'decimal',
+        'DecimalField':      'decimal:%(max_digits)s,%(decimal_places)s',
         'BlobField':         'blob',
 #        'ImageField':
     }
