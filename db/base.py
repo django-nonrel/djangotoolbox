@@ -12,6 +12,7 @@ class NonrelDatabaseFeatures(BaseDatabaseFeatures):
 
     distinguishes_insert_from_update = False
     supports_deleting_related_objects = False
+    string_based_auto_field = False
 
 class NonrelDatabaseOperations(BaseDatabaseOperations):
     def __init__(self, connection):
@@ -44,6 +45,17 @@ class NonrelDatabaseOperations(BaseDatabaseOperations):
     def year_lookup_bounds(self, value): 
         return [datetime.datetime(value, 1, 1, 0, 0, 0, 0),
                 datetime.datetime(value+1, 1, 1, 0, 0, 0, 0)]
+
+    def value_to_db_auto(self, value):
+        """
+        Transform a value to an object compatible with the AutoField required
+        by the backend driver for auto columns.
+        """
+        if self.connection.features.string_based_auto_field:
+            if value is None:
+                return None
+            return unicode(value)
+        return super(NonrelDatabaseOperations, self).value_to_db_auto(value)
 
 class NonrelDatabaseClient(BaseDatabaseClient):
     pass
