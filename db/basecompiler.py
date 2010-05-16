@@ -29,7 +29,6 @@ class NonrelQuery(object):
         self.compiler = compiler
         self.connection = compiler.connection
         self.query = self.compiler.query
-        self.ordering = ()
         self._negated = False
 
     def fetch(self, low_mark=0, high_mark=None):
@@ -108,8 +107,12 @@ class NonrelQuery(object):
         elif isinstance(value, str):
             value = str(value)
 
-        if lookup_type == 'startswith':
+        if lookup_type in ('startswith', 'istartswith'):
             value = value[:-1]
+        elif lookup_type in ('endswith', 'iendswith'):
+            value = value[1:]
+        elif lookup_type in ('contains', 'icontains'):
+            value = value[1:-1]
 
         return value
 
