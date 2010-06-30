@@ -85,6 +85,9 @@ class NonrelQuery(object):
         constraint, lookup_type, annotation, value = child
         packed, value = constraint.process(lookup_type, value, self.connection)
         alias, column, db_type = packed
+        if alias and alias != self.query.model._meta.db_table:
+            raise DatabaseError("This database doesn't support JOINs "
+                                "and multi-table inheritance.")
         value = self._normalize_lookup_value(value, annotation, lookup_type)
         return column, lookup_type, db_type, value
 
@@ -144,6 +147,9 @@ class NonrelQuery(object):
                 constraint, lookup_type, annotation, value = child
                 packed, value = constraint.process(lookup_type, value, self.connection)
                 alias, column, db_type = packed
+                if alias != self.query.model._meta.db_table:
+                    raise DatabaseError("This database doesn't support JOINs "
+                                        "and multi-table inheritance.")
 
                 # Django fields always return a list (see Field.get_db_prep_lookup)
                 # except if get_db_prep_lookup got overridden by a subclass
@@ -206,6 +212,7 @@ class NonrelCompiler(SQLCompiler):
         """
         Returns an iterator over the results from executing this query.
         """
+        self.check_query()
         fields = self.get_fields()
         low_mark = self.query.low_mark
         high_mark = self.query.high_mark
@@ -247,6 +254,11 @@ class NonrelCompiler(SQLCompiler):
     # ----------------------------------------------
     # Additional NonrelCompiler API
     # ----------------------------------------------
+    def check_query(self):
+        if (len([a for a in self.query.alias_map if self.query.alias_refcount[a]]) > 1
+                or self.query.distinct or self.query.extra or self.query.having):
+            raise DatabaseError('This query is not supported by the database.')
+
     def get_count(self, check_exists=False):
         """
         Counts matches using the current filter constraints.
@@ -287,6 +299,10 @@ class NonrelCompiler(SQLCompiler):
             db_table = self.query.model._meta.db_table
             fields = [f for f in fields if db_table in only_load and
                       f.column in only_load[db_table]]
+        for field in fields:
+            if field.model._meta != self.query.model._meta:
+                raise DatabaseError('Multi-table inheritance is not supported '
+                                    'by non-relational DBs.')
         return fields
 
     def _get_ordering(self):
