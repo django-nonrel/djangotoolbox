@@ -1,4 +1,4 @@
-from setuptools import setup, find_packages
+from setuptools import setup
 import os
 
 DESCRIPTION = "Djangotoolbox for Django-nonrel"
@@ -8,8 +8,6 @@ try:
     LONG_DESCRIPTION = open('README.rst').read()
 except:
     pass
-
-init = os.path.join(os.path.dirname(__file__), 'djangotoolbox', '__init__.py')
 
 CLASSIFIERS = [
     'Development Status :: 4 - Beta',
@@ -23,7 +21,7 @@ CLASSIFIERS = [
 ]
 
 setup(name='djangotoolbox',
-      packages=find_packages(),
+      packages=['djangotoolbox'],
       author='Waldemar Kornewald',
       url='http://www.allbuttonspressed.com/projects/djangotoolbox',
       include_package_data=True,
