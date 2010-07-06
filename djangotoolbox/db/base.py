@@ -37,6 +37,9 @@ class NonrelDatabaseOperations(BaseDatabaseOperations):
     def prep_for_like_query(self, value):
         return value
 
+    def prep_for_iexact_query(self, value):
+        return value
+
     def check_aggregate_support(self, aggregate):
         # TODO: Only COUNT(*) should be supported, by default.
         # Raise NotImplementedError in all other cases.
