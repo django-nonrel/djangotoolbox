@@ -4,12 +4,12 @@ except NameError:
     from sets import Set as set # Python 2.3 fallback
 
 from django.db import connection
-from django.contrib.auth.models import User, Permission
+from djangotoolbox.contrib.auth.models import User, Permission
 
 
 class ModelBackend(object):
     """
-    Authenticates against django.contrib.auth.models.User.
+    Authenticates against djangotoolbox.contrib.auth.models.User.
     """
     supports_object_permissions = False
     supports_anonymous_user = True

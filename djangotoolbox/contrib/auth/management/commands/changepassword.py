@@ -1,9 +1,9 @@
 from django.core.management.base import BaseCommand, CommandError
-from django.contrib.auth.models import User
+from djangotoolbox.contrib.auth.models import User
 import getpass
 
 class Command(BaseCommand):
-    help = "Change a user's password for django.contrib.auth."
+    help = "Change a user's password for djangotoolbox.contrib.auth."
 
     requires_model_validation = False
 

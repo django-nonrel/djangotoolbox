@@ -5,7 +5,7 @@ from django.core.exceptions import ImproperlyConfigured
 class LazyUser(object):
     def __get__(self, request, obj_type=None):
         if not hasattr(request, '_cached_user'):
-            from django.contrib.auth import get_user
+            from djangotoolbox.contrib.auth import get_user
             request._cached_user = get_user(request)
         return request._cached_user
 
@@ -43,7 +43,7 @@ class RemoteUserMiddleware(object):
                 "The Django remote user auth middleware requires the"
                 " authentication middleware to be installed.  Edit your"
                 " MIDDLEWARE_CLASSES setting to insert"
-                " 'django.contrib.auth.middleware.AuthenticationMiddleware'"
+                " 'djangotoolbox.contrib.auth.middleware.AuthenticationMiddleware'"
                 " before the RemoteUserMiddleware class.")
         try:
             username = request.META[self.header]

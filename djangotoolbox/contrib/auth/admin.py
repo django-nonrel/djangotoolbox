@@ -2,8 +2,8 @@ from django import template
 from django.db import transaction
 from django.conf import settings
 from django.contrib import admin
-from django.contrib.auth.forms import UserCreationForm, UserChangeForm, AdminPasswordChangeForm
-from django.contrib.auth.models import User, Group
+from djangotoolbox.contrib.auth.forms import UserCreationForm, UserChangeForm, AdminPasswordChangeForm
+from djangotoolbox.contrib.auth.models import User, Group
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.http import HttpResponseRedirect, Http404

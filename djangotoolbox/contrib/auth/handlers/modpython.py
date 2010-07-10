@@ -25,7 +25,7 @@ def authenhandler(req, **kwargs):
     if settings_module:
         os.environ['DJANGO_SETTINGS_MODULE'] = settings_module
 
-    from django.contrib.auth.models import User
+    from djangotoolbox.contrib.auth.models import User
     from django import db
     db.reset_queries()
 

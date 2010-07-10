@@ -8,7 +8,7 @@ def auth(request):
     system.
 
     If there is no 'user' attribute in the request, uses AnonymousUser (from
-    django.contrib.auth).
+    djangotoolbox.contrib.auth).
     """
     # If we access request.user, request.session is accessed, which results in
     # 'Vary: Cookie' being sent in every request that uses this context
@@ -23,7 +23,7 @@ def auth(request):
         if hasattr(request, 'user'):
             return request.user
         else:
-            from django.contrib.auth.models import AnonymousUser
+            from djangotoolbox.contrib.auth.models import AnonymousUser
             return AnonymousUser()
 
     return {

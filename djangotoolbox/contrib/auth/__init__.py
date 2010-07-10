@@ -88,11 +88,11 @@ def logout(request):
     """
     request.session.flush()
     if hasattr(request, 'user'):
-        from django.contrib.auth.models import AnonymousUser
+        from djangotoolbox.contrib.auth.models import AnonymousUser
         request.user = AnonymousUser()
 
 def get_user(request):
-    from django.contrib.auth.models import AnonymousUser
+    from djangotoolbox.contrib.auth.models import AnonymousUser
     try:
         user_id = request.session[SESSION_KEY]
         backend_path = request.session[BACKEND_SESSION_KEY]

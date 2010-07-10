@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.test import TestCase
-from django.contrib.auth.models import User, SiteProfileNotAvailable
+from djangotoolbox.contrib.auth.models import User, SiteProfileNotAvailable
 
 class ProfileTestCase(TestCase):
     fixtures = ['authtestdata.json']

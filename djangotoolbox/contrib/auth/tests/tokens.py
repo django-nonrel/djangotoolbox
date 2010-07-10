@@ -1,6 +1,6 @@
 TOKEN_GENERATOR_TESTS = """
->>> from django.contrib.auth.models import User, AnonymousUser
->>> from django.contrib.auth.tokens import PasswordResetTokenGenerator
+>>> from djangotoolbox.contrib.auth.models import User, AnonymousUser
+>>> from djangotoolbox.contrib.auth.tokens import PasswordResetTokenGenerator
 >>> from django.conf import settings
 >>> u = User.objects.create_user('tokentestuser', 'test2@example.com', 'testpw')
 >>> p0 = PasswordResetTokenGenerator()

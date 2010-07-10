@@ -1,8 +1,8 @@
 
 FORM_TESTS = """
->>> from django.contrib.auth.models import User
->>> from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
->>> from django.contrib.auth.forms import PasswordChangeForm, SetPasswordForm
+>>> from djangotoolbox.contrib.auth.models import User
+>>> from djangotoolbox.contrib.auth.forms import UserCreationForm, AuthenticationForm
+>>> from djangotoolbox.contrib.auth.forms import PasswordChangeForm, SetPasswordForm
 
 # The user already exists.
 
@@ -183,7 +183,7 @@ True
 
 ### UserChangeForm
 
->>> from django.contrib.auth.forms import UserChangeForm
+>>> from djangotoolbox.contrib.auth.forms import UserChangeForm
 >>> data = {'username': 'not valid'}
 >>> form = UserChangeForm(data, instance=user)
 >>> form.is_valid()
@@ -194,7 +194,7 @@ False
 
 ### PasswordResetForm
 
->>> from django.contrib.auth.forms import PasswordResetForm
+>>> from djangotoolbox.contrib.auth.forms import PasswordResetForm
 >>> data = {'email':'not valid'}
 >>> form = PasswordResetForm(data)
 >>> form.is_valid()
