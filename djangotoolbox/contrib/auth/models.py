@@ -112,7 +112,7 @@ class GroupList(models.Model):
     
     groups = ListField(models.ForeignKey(Group))
     
-    
+
 class UserManager(models.Manager):
     def create_user(self, username, email, password=None):
         """
@@ -215,7 +215,6 @@ class User(models.Model):
     is_superuser = models.BooleanField(_('superuser status'), default=False, help_text=_("Designates that this user has all permissions without explicitly assigning them."))
     last_login = models.DateTimeField(_('last login'), default=datetime.datetime.now)
     date_joined = models.DateTimeField(_('date joined'), default=datetime.datetime.now)
-    groups = models.ManyToManyField(Group, blank=True)
     group_list = models.ForeignKey(GroupList, verbose_name=_('grouplist'), blank=True, null=True,
         help_text=_("In addition to the permissions manually assigned, this user will also get all permissions granted to each group he/she is in."))
     user_permissions = models.ManyToManyField(Permission, verbose_name=_('user permissions'), blank=True)
@@ -397,7 +396,16 @@ class User(models.Model):
     
     def _get_groups(self):
         return self.group_list.groups
-    groups_new= property(_get_groups)
+    groups= property(_get_groups)
+
+     
+    def save(self, *args, **kwargs):
+        if self.group_list is not None:
+            gl = self.group_list
+            gl.save()
+            
+        super(User, self).save(*args, **kwargs) # Call the "real" save() method.
+
     
     
 class Message(models.Model):
