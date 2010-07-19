@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.db import models
 from djangotoolbox.contrib.auth.models import User, Group, Permission, AnonymousUser
 from django.contrib.contenttypes.models import ContentType
 from django.test import TestCase
@@ -88,7 +89,7 @@ class BackendTest(TestCase):
         self.assertEqual(user.get_all_permissions(), set(['auth.test']))
 
 
-class TestObj(object):
+class TestObj(models.Model):
     pass
 
 
