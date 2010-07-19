@@ -117,7 +117,13 @@ class PasswordResetTest(AuthViewsTestCase):
         self.assert_("The two password fields didn&#39;t match" in response.content)
 
 class ChangePasswordTest(AuthViewsTestCase):
-
+    
+    def setUp(self):
+        # added for djangotoolbox.contrib.auth
+        settings.SITE_ID = 1
+        Site.objects.create(id=settings.SITE_ID, name='testSite')
+        AuthViewsTestCase.setUp(self)
+        
     def login(self, password='password'):
         response = self.client.post('/login/', {
             'username': 'testclient',
@@ -176,6 +182,12 @@ class ChangePasswordTest(AuthViewsTestCase):
 
 class LoginTest(AuthViewsTestCase):
 
+    def setUp(self):
+        # added for djangotoolbox.contrib.auth
+        settings.SITE_ID = 1
+        Site.objects.create(id=settings.SITE_ID, name='testSite')
+        AuthViewsTestCase.setUp(self)
+        
     def test_current_site_in_context_after_login(self):
         response = self.client.get(reverse('djangotoolbox.contrib.auth.views.login'))
         self.assertEquals(response.status_code, 200)
