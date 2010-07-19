@@ -1,7 +1,7 @@
 import datetime
 import urllib
 
-from django.contrib import auth
+from djangotoolbox.contrib import auth
 from django.core.exceptions import ImproperlyConfigured
 from django.db import models
 from django.db.models.manager import EmptyManager
@@ -215,7 +215,8 @@ class User(models.Model):
     is_superuser = models.BooleanField(_('superuser status'), default=False, help_text=_("Designates that this user has all permissions without explicitly assigning them."))
     last_login = models.DateTimeField(_('last login'), default=datetime.datetime.now)
     date_joined = models.DateTimeField(_('date joined'), default=datetime.datetime.now)
-    groups = models.ForeignKey(GroupList, verbose_name=_('grouplist'), blank=True,
+    groups = models.ManyToManyField(Group, blank=True)
+    group_list = models.ForeignKey(GroupList, verbose_name=_('grouplist'), blank=True, null=True,
         help_text=_("In addition to the permissions manually assigned, this user will also get all permissions granted to each group he/she is in."))
     user_permissions = models.ManyToManyField(Permission, verbose_name=_('user permissions'), blank=True)
     objects = UserManager()
@@ -393,6 +394,12 @@ class User(models.Model):
         return self._message_set
     message_set = property(_get_message_set)
 
+    
+    def _get_groups(self):
+        return self.group_list.groups
+    groups_new= property(_get_groups)
+    
+    
 class Message(models.Model):
     """
     The message system is a lightweight way to queue messages for given
