@@ -10,6 +10,8 @@ from django.utils.encoding import smart_str
 from django.utils.hashcompat import md5_constructor, sha_constructor
 from django.utils.translation import ugettext_lazy as _
 
+from djangotoolbox.fields import ListField
+
 
 UNUSABLE_PASSWORD = '!' # This will never be a valid hash
 
@@ -92,7 +94,9 @@ class Group(models.Model):
     Beyond permissions, groups are a convenient way to categorize users to apply some label, or extended functionality, to them. For example, you could create a group 'Special users', and you could write code that would do special things to those users -- such as giving them access to a members-only portion of your site, or sending them members-only e-mail messages.
     """
     name = models.CharField(_('name'), max_length=80, unique=True)
-    permissions = models.ManyToManyField(Permission, verbose_name=_('permissions'), blank=True)
+
+    # turn permission system off
+    #permissions = models.ManyToManyField(Permission, verbose_name=_('permissions'), blank=True)
 
     class Meta:
         verbose_name = _('group')
@@ -101,6 +105,14 @@ class Group(models.Model):
     def __unicode__(self):
         return self.name
 
+class GroupList(models.Model):
+    """
+    GroupLists are used to map a list of groups to a user
+    """
+    
+    groups = ListField(models.ForeignKey(Group))
+    
+    
 class UserManager(models.Manager):
     def create_user(self, username, email, password=None):
         """
@@ -203,7 +215,7 @@ class User(models.Model):
     is_superuser = models.BooleanField(_('superuser status'), default=False, help_text=_("Designates that this user has all permissions without explicitly assigning them."))
     last_login = models.DateTimeField(_('last login'), default=datetime.datetime.now)
     date_joined = models.DateTimeField(_('date joined'), default=datetime.datetime.now)
-    groups = models.ManyToManyField(Group, verbose_name=_('groups'), blank=True,
+    groups = models.ForeignKey(GroupList, verbose_name=_('grouplist'), blank=True,
         help_text=_("In addition to the permissions manually assigned, this user will also get all permissions granted to each group he/she is in."))
     user_permissions = models.ManyToManyField(Permission, verbose_name=_('user permissions'), blank=True)
     objects = UserManager()
