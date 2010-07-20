@@ -19,26 +19,25 @@ class GroupPermissionTest(TestCase):
     def test_group_perms(self):
         user = User.objects.get(username='test')
         group = Group.objects.create(name='test_group')
+        
         user.group_list.groups.append(group.id)
         user.save()
+        
         content_type=ContentType.objects.get_for_model(Group)
         perm = Permission.objects.create(name='test_group', content_type=content_type, codename='test_group')
-        perm_list = PermissionList.objects.create()
-        perm_list.permissions.append(perm.id)
+
+        group.permissions.permissions.append(perm.id)
+        
         content_type=ContentType.objects.get_for_model(ContentType)
         perm = Permission.objects.create(name='test_group', content_type=content_type, codename='test_group')
-        perm_list.permissions.append(perm.id)
-        perm_list.save()
-        group.permissions = perm_list
+        group.permissions.permissions.append(perm.id)
         group.save()
         self.assertEqual(user.get_group_permissions(), set([u'contenttypes.test_group', u'auth.test_group']))
 
-        pl = PermissionList.objects.create()
-        user.user_permissions = pl
-        user.save()
+        
         perm = Permission.objects.create(name='perm1', content_type=content_type, codename='perm1')
-        pl.permissions.append(perm.id)
-        pl.save()
+        user.user_permissions.permissions.append(perm.id)
+        user.save()
 
         self.assertEqual(user.has_perm('contenttypes.perm1'),True)
         self.assertEqual(user.get_all_permissions(), set([u'contenttypes.perm1', u'contenttypes.test_group', u'auth.test_group']))
