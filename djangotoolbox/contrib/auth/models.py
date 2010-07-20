@@ -74,7 +74,7 @@ class Permission(models.Model):
         verbose_name = _('permission')
         verbose_name_plural = _('permissions')
         unique_together = (('content_type', 'codename'),)
-        ordering = ('content_type__app_label', 'content_type__model', 'codename')
+        #ordering = ('content_type__app_label', 'content_type__model', 'codename')
 
     def __unicode__(self):
         return u"%s | %s | %s" % (
@@ -86,6 +86,11 @@ class Permission(models.Model):
         return (self.codename,) + self.content_type.natural_key()
     natural_key.dependencies = ['contenttypes.contenttype']
 
+
+class PermissionList(models.Model):
+    permissions = ListField(models.ForeignKey(Permission))
+
+    
 class Group(models.Model):
     """Groups are a generic way of categorizing users to apply permissions, or some other label, to those users. A user can belong to any number of groups.
 
@@ -95,8 +100,7 @@ class Group(models.Model):
     """
     name = models.CharField(_('name'), max_length=80, unique=True)
 
-    # turn permission system off
-    #permissions = models.ManyToManyField(Permission, verbose_name=_('permissions'), blank=True)
+    permissions = models.ForeignKey(PermissionList, verbose_name=_('permissions'), blank=True, null=True)
 
     class Meta:
         verbose_name = _('group')
