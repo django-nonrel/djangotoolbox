@@ -431,8 +431,10 @@ class User(models.Model):
     def save(self, *args, **kwargs):
         # PROBLEM convenience or performance?
         if self.group_list is not None:
-            gl = self.group_list
-            gl.save()
+            self.group_list.save()
+            
+        if self.user_permissions is not None:
+            self.user_permissions.save()
             
         super(User, self).save(*args, **kwargs) # Call the "real" save() method.
 
