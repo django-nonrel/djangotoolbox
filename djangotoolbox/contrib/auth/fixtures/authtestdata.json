@@ -11,7 +11,7 @@
             "is_staff": false, 
             "last_login": "2006-12-17 07:03:31", 
             "group_list": null,
-            "user_permissions": [], 
+            "user_permissions": null, 
             "password": "sha1$6efc0$f93efe9fd7542f25a7be94871ea45aa95de57161", 
             "email": "testclient@example.com", 
             "date_joined": "2006-12-17 07:03:31"
@@ -29,7 +29,7 @@
             "is_staff": false, 
             "last_login": "2006-12-17 07:03:31", 
             "group_list": null, 
-            "user_permissions": [], 
+            "user_permissions": null, 
             "password": "sha1$6efc0$f93efe9fd7542f25a7be94871ea45aa95de57161", 
             "email": "testclient@example.com", 
             "date_joined": "2006-12-17 07:03:31"
@@ -47,7 +47,7 @@
             "is_staff": true, 
             "last_login": "2006-12-17 07:03:31", 
             "group_list": null, 
-            "user_permissions": [], 
+            "user_permissions": null, 
             "password": "sha1$6efc0$f93efe9fd7542f25a7be94871ea45aa95de57161", 
             "email": "staffmember@example.com", 
             "date_joined": "2006-12-17 07:03:31"

@@ -221,13 +221,19 @@ class User(models.Model):
     date_joined = models.DateTimeField(_('date joined'), default=datetime.datetime.now)
     group_list = models.ForeignKey(GroupList, verbose_name=_('grouplist'), blank=True, null=True,
         help_text=_("In addition to the permissions manually assigned, this user will also get all permissions granted to each group he/she is in."))
-    user_permissions = models.ManyToManyField(Permission, verbose_name=_('user permissions'), blank=True)
+    user_permissions = models.ForeignKey(PermissionList, verbose_name=_('user permissions'), blank=True, null=True)
     objects = UserManager()
 
     class Meta:
         verbose_name = _('user')
         verbose_name_plural = _('users')
 
+    def __init__(self, *args, **kwargs):
+        super(User, self).__init__( *args, **kwargs)
+        # PROBLEM convenience or performance?
+        self.user_permissions = PermissionList.objects.create()
+        self.group_list = GroupList.objects.create()
+        
     def __unicode__(self):
         return self.username
 
@@ -404,6 +410,7 @@ class User(models.Model):
 
      
     def save(self, *args, **kwargs):
+        # PROBLEM convenience or performance?
         if self.group_list is not None:
             gl = self.group_list
             gl.save()
