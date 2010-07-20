@@ -4,7 +4,8 @@ except NameError:
     from sets import Set as set # Python 2.3 fallback
 
 from django.db import connection
-from djangotoolbox.contrib.auth.models import User, Permission
+from djangotoolbox.contrib.auth.models import User, Permission, Group
+from django.contrib.contenttypes.models import ContentType
 
 
 class ModelBackend(object):
@@ -30,9 +31,24 @@ class ModelBackend(object):
         groups.
         """
         if not hasattr(user_obj, '_group_perm_cache'):
-            perms = Permission.objects.filter(group__user=user_obj
-                ).values_list('content_type__app_label', 'codename'
-                ).order_by()
+            # get all Group objects, a user is member of
+            group_ids = user_obj.group_list.groups
+            q = Group.objects.filter()
+            for group_id in group_ids:
+                q.filter(id=group_id)
+
+            perm_ids = list()
+            for group in q:
+                perm_ids += group.permissions.permissions
+
+            q = Permission.objects.filter()
+            for perm_id in perm_ids:
+                q.filter(id=perm_id)
+                
+            perms = list()
+            for perm in q:
+                perms.append([perm.content_type.app_label, perm.codename])
+  
             user_obj._group_perm_cache = set(["%s.%s" % (ct, name) for ct, name in perms])
         return user_obj._group_perm_cache
 
