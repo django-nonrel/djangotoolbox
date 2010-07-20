@@ -40,7 +40,7 @@ class BackendTest(TestCase):
         user = User.objects.get(username='test')
         content_type=ContentType.objects.get_for_model(Group)
         perm = Permission.objects.create(name='test', content_type=content_type, codename='test')
-        # django.contrib.auth way
+        # default django way (ManyToManyField)
         #user.user_permissions.add(perm)
 
         # curent djangotoolbox.contrib.auth api
@@ -55,7 +55,7 @@ class BackendTest(TestCase):
         self.assertEqual(user.has_module_perms('auth'), True)
         
         perm = Permission.objects.create(name='test2', content_type=content_type, codename='test2')
-        # django.contrib.auth way
+        # default django way (ManyToManyField)
         #user.user_permissions.add(perm)
 
         # curent djangotoolbox.contrib.auth api
@@ -63,7 +63,7 @@ class BackendTest(TestCase):
 
         user.save()
         perm = Permission.objects.create(name='test3', content_type=content_type, codename='test3')
-        # django.contrib.auth way
+        # default django  way (ManyToManyField)
         #user.user_permissions.add(perm)
 
         # curent djangotoolbox.contrib.auth api
@@ -79,7 +79,7 @@ class BackendTest(TestCase):
         perm = Permission.objects.create(name='test_group', content_type=content_type, codename='test_group')
         group = Group.objects.create(name='test_group')
 
-        # default django way
+        # default django way (ManyToManyField)
         #group.permissions.add(perm)
 
         # current djangotoolbox.contrib.auth way
@@ -87,7 +87,7 @@ class BackendTest(TestCase):
         
         group.save()
 
-        # default django way
+        # default django way (ManyToManyField)
         #user.groups.add(group)
 
         # current djangotoolbox way
@@ -112,7 +112,7 @@ class BackendTest(TestCase):
         content_type.save()
         perm = Permission.objects.create(name='test', content_type=content_type, codename='test')
         
-        # django.contrib.auth way
+        # default django way (ManyToManyField)
         #user.user_permissions.add(perm)
 
         # curent djangotoolbox.contrib.auth api
@@ -211,9 +211,11 @@ class RowlevelBackendTest(TestCase):
     def test_get_group_permissions(self):
         content_type=ContentType.objects.get_for_model(Group)
         group = Group.objects.create(name='test_group')
+
+        """
         self.user3.groups.add(group)
         self.assertEqual(self.user3.get_group_permissions(TestObj()), set(['group_perm']))
-
+        """
 
 class AnonymousUserBackend(SimpleRowlevelBackend):
 
