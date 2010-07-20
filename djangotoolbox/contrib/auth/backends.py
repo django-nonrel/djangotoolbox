@@ -33,19 +33,22 @@ class ModelBackend(object):
         if not hasattr(user_obj, '_group_perm_cache'):
             # get all Group objects, a user is member of
             group_ids = user_obj.group_list.groups
-            q = Group.objects.filter()
-            for group_id in group_ids:
-                q.filter(id=group_id)
 
-            perm_ids = list()
-            for group in q:
-                perm_ids += group.permissions.permissions
-
-            q = Permission.objects.filter()
-            for perm_id in perm_ids:
-                q.filter(id=perm_id)
+            if len(group_ids) > 0:
+                q = Group.objects.filter(id__in=group_ids)
+            else:
+                q = list()
                 
-            perms = list()
+            perm_ids = set()
+            for group in q:
+                perm_ids.update(group.permissions.permissions)
+
+            if len(perm_ids) > 0:
+                q = Permission.objects.filter(id__in=perm_ids)
+            else:
+                q = list()
+                
+            perms = list()        
             for perm in q:
                 perms.append([perm.content_type.app_label, perm.codename])
   
