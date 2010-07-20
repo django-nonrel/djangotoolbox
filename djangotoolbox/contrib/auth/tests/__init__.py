@@ -8,8 +8,6 @@ from djangotoolbox.contrib.auth.tests.auth_backends import AnonymousUserBackendT
 from djangotoolbox.contrib.auth.tests.tokens import TOKEN_GENERATOR_TESTS
 from djangotoolbox.contrib.auth.tests.models import ProfileTestCase
 
-#from djangotoolbox.contrib.auth.tests.groups import GroupPermissionTest
-
 # The password for the fixture data users is 'password'
 
 __test__ = {
