@@ -91,6 +91,12 @@ class PermissionList(models.Model):
     permissions = ListField(models.ForeignKey(Permission))
 
 
+class GroupManager(models.Manager):
+    def create(self, **kwargs):
+        kwargs['permissions'] = PermissionList.objects.create()
+        return super(GroupManager, self).create(**kwargs)
+        
+    
 class Group(models.Model):
     """Groups are a generic way of categorizing users to apply permissions, or some other label, to those users. A user can belong to any number of groups.
 
@@ -102,12 +108,21 @@ class Group(models.Model):
 
     permissions = models.ForeignKey(PermissionList, verbose_name=_('permissions'), blank=True, null=True)
 
+    objects = GroupManager()
+    
     class Meta:
         verbose_name = _('group')
         verbose_name_plural = _('groups')
 
     def __unicode__(self):
         return self.name
+
+    def save(self, *args, **kwargs):
+        # PROBLEM convenience or performance?
+        if self.permissions is not None:
+            self.permissions.save()
+            
+        super(Group, self).save(*args, **kwargs) # Call the "real" save() method.
 
 class GroupList(models.Model):
     """
@@ -163,7 +178,14 @@ class UserManager(models.Manager):
         from random import choice
         return ''.join([choice(allowed_chars) for i in range(length)])
     
+    def create(self, **kwargs):
+        # create list objects
+        kwargs['group_list'] = GroupList.objects.create()
+        kwargs['user_permissions'] = PermissionList.objects.create()
+        return super(UserManager, self).create(**kwargs)
  
+
+    
 # A few helper functions for common logic between User and AnonymousUser.
 def _user_get_all_permissions(user, obj):
     permissions = set()
