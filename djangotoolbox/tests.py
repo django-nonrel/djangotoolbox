@@ -18,6 +18,9 @@ class FilterTest(TestCase):
         for i, float in enumerate(FilterTest.floats):
             ListModel(floating_point=float, names=FilterTest.names[:i+1]).save()
 
+    def test_equals_empty(self):
+        self.assertEqual(ListModel.objects.filter(names=[]).count(), 0)
+
     def test_startswith(self):
         self.assertEquals([entity.names for entity in
                            ListModel.objects.filter(names__startswith='Sa')],
