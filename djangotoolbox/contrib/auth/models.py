@@ -158,8 +158,6 @@ class UserManager(models.Manager):
         else:
             user.set_unusable_password()
 
-        user.group_list = GroupList.objects.create()
-        user.user_permissions = PermissionList.objects.create()
         user.save(using=self._db)
         return user
 
@@ -178,11 +176,6 @@ class UserManager(models.Manager):
         from random import choice
         return ''.join([choice(allowed_chars) for i in range(length)])
     
-    def create(self, **kwargs):
-        # create list objects
-        kwargs['group_list'] = GroupList.objects.create()
-        kwargs['user_permissions'] = PermissionList.objects.create()
-        return super(UserManager, self).create(**kwargs)
  
 
     
@@ -244,9 +237,10 @@ class User(models.Model):
     is_superuser = models.BooleanField(_('superuser status'), default=False, help_text=_("Designates that this user has all permissions without explicitly assigning them."))
     last_login = models.DateTimeField(_('last login'), default=datetime.datetime.now)
     date_joined = models.DateTimeField(_('date joined'), default=datetime.datetime.now)
-    group_list = models.ForeignKey(GroupList, verbose_name=_('grouplist'), blank=True, null=True,
+
+    _group_list = models.ForeignKey(GroupList, verbose_name=_('grouplist'), blank=True, null=True,
         help_text=_("In addition to the permissions manually assigned, this user will also get all permissions granted to each group he/she is in."))
-    user_permissions = models.ForeignKey(PermissionList, verbose_name=_('user permissions'), blank=True, null=True)
+    _permission_list = models.ForeignKey(PermissionList, verbose_name=_('user permissions'), blank=True, null=True)
     objects = UserManager()
 
     class Meta:
@@ -422,19 +416,58 @@ class User(models.Model):
         return self._message_set
     message_set = property(_get_message_set)
 
+
     
     def _get_groups(self):
-        return self.group_list.groups
+        if self._group_list is None:
+            gl = GroupList.objects.create()
+            self._group_list = gl
+            
+        if not hasattr(self, '_groups_cache'):
+  
+            group_ids = self._group_list.groups
+            groups = set()
+            if len(group_ids) > 0:
+                groups.update(Group.objects.filter(id__in=group_ids))
+          
+            setattr(self, '_groups_cache', groups)
+            
+        return self._groups_cache
     groups= property(_get_groups)
+
+    def _get_user_permissions(self):
+        if self._permission_list is None:
+            pl = PermissionList.objects.create()
+            self._permission_list = pl
+            
+        if not hasattr(self, '_user_permissions_cache'):
+  
+            perm_ids = self._permission_list.permissions
+            permissions = set()
+            if len(perm_ids) > 0:
+                permissions.update(Permission.objects.filter(id__in=perm_ids))
+          
+            setattr(self, '_user_permissions_cache', permissions)
+            
+        return self._user_permissions_cache
+    user_permissions = property(_get_user_permissions)
 
      
     def save(self, *args, **kwargs):
         # PROBLEM convenience or performance?
-        if self.group_list is not None:
-            self.group_list.save()
-            
-        if self.user_permissions is not None:
-            self.user_permissions.save()
+        if hasattr(self, '_groups_cache'):
+            group_ids = list()
+            for group in self._groups_cache:
+                group_ids.append(group.id)
+            self._group_list.groups = group_ids
+            self._group_list.save()
+
+        if hasattr(self, '_user_permissions_cache'):
+            perm_ids = list()
+            for perm in self._user_permissions_cache:
+                perm_ids.append(perm.id)
+            self._permission_list.permissions = perm_ids
+            self._permission_list.save()
             
         super(User, self).save(*args, **kwargs) # Call the "real" save() method.
 
