@@ -10,11 +10,11 @@
             "is_superuser": false, 
             "is_staff": false, 
             "last_login": "2006-12-17 07:03:31", 
-            "group_list": null,
-            "user_permissions": null, 
+            "_group_list": null,
             "password": "sha1$6efc0$f93efe9fd7542f25a7be94871ea45aa95de57161", 
             "email": "testclient@example.com", 
-            "date_joined": "2006-12-17 07:03:31"
+            "date_joined": "2006-12-17 07:03:31",
+            "_permission_list": null
         }
     },
     {
@@ -28,11 +28,11 @@
             "is_superuser": false, 
             "is_staff": false, 
             "last_login": "2006-12-17 07:03:31", 
-            "group_list": null, 
-            "user_permissions": null, 
+            "_group_list": null, 
             "password": "sha1$6efc0$f93efe9fd7542f25a7be94871ea45aa95de57161", 
             "email": "testclient@example.com", 
-            "date_joined": "2006-12-17 07:03:31"
+            "date_joined": "2006-12-17 07:03:31",
+            "_permission_list": null
         }
     },
     {
@@ -46,11 +46,11 @@
             "is_superuser": false, 
             "is_staff": true, 
             "last_login": "2006-12-17 07:03:31", 
-            "group_list": null, 
-            "user_permissions": null, 
+            "_group_list": null, 
             "password": "sha1$6efc0$f93efe9fd7542f25a7be94871ea45aa95de57161", 
             "email": "staffmember@example.com", 
-            "date_joined": "2006-12-17 07:03:31"
+            "date_joined": "2006-12-17 07:03:31",
+            "_permission_list": null
         }
     }
 ]
