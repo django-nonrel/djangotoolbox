@@ -41,10 +41,7 @@ class BackendTest(TestCase):
         content_type=ContentType.objects.get_for_model(Group)
         perm = Permission.objects.create(name='test', content_type=content_type, codename='test')
         # default django way (ManyToManyField)
-        #user.user_permissions.add(perm)
-
-        # curent djangotoolbox.contrib.auth api
-        user.user_permissions.permissions.append(perm.id)
+        user.user_permissions.add(perm)
         
         user.save()
         # reloading user to purge the _perm_cache
@@ -55,20 +52,16 @@ class BackendTest(TestCase):
         self.assertEqual(user.has_module_perms('auth'), True)
         
         perm = Permission.objects.create(name='test2', content_type=content_type, codename='test2')
-        # default django way (ManyToManyField)
-        #user.user_permissions.add(perm)
 
-        # curent djangotoolbox.contrib.auth api
-        user.user_permissions.permissions.append(perm.id)
+        # default django way (ManyToManyField)
+        user.user_permissions.add(perm)
 
         user.save()
         perm = Permission.objects.create(name='test3', content_type=content_type, codename='test3')
-        # default django  way (ManyToManyField)
-        #user.user_permissions.add(perm)
 
-        # curent djangotoolbox.contrib.auth api
-        user.user_permissions.permissions.append(perm.id)
-        
+        # default django  way (ManyToManyField)
+        user.user_permissions.add(perm)
+
         user.save()
         user = User.objects.get(username='test')
         self.assertEqual(user.get_all_permissions(), set([u'auth.test2', u'auth.test', u'auth.test3']))
@@ -88,11 +81,15 @@ class BackendTest(TestCase):
         group.save()
 
         # default django way (ManyToManyField)
-        #user.groups.add(group)
+        user.groups.add(group)
 
-        # current djangotoolbox way
+        # djangotoolbox.contrib.auth needs save()
+        user.save()
+
+        """# current djangotoolbox way
         user.group_list.groups.append(group.id)
         user.save()
+        """
         
         user = User.objects.get(username='test')
         exp = set([u'auth.test2', u'auth.test', u'auth.test3', u'auth.test_group'])
@@ -113,10 +110,7 @@ class BackendTest(TestCase):
         perm = Permission.objects.create(name='test', content_type=content_type, codename='test')
         
         # default django way (ManyToManyField)
-        #user.user_permissions.add(perm)
-
-        # curent djangotoolbox.contrib.auth api
-        user.user_permissions.permissions.append(perm.id)
+        user.user_permissions.add(perm)
 
         user.save()
 
