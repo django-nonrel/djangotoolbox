@@ -51,19 +51,19 @@ class CapturingTestRunner(DjangoTestRunner):
         stdout = sys.stdout
         stderr = sys.stderr
 
-        def extend_error():
+        def extend_error(errors):
             captured_stdout = sys.stdout.getvalue()
             captured_stderr = sys.stderr.getvalue()
             sys.stdout = stdout
             sys.stderr = stderr
-            t, e = result.failures[-1]
+            t, e = errors[-1]
             if captured_stdout:
                 e += '\n--------------- Captured stdout: ---------------\n'
                 e += captured_stdout
             if captured_stderr:
                 e += '\n--------------- Captured stderr: ---------------\n'
                 e += captured_stderr
-            result.failures[-1] = (t, e)
+            errors[-1] = (t, e)
 
         def override(func):
             func.orig = getattr(result, func.__name__)
@@ -85,12 +85,12 @@ class CapturingTestRunner(DjangoTestRunner):
         @override
         def addError(test, err):
             addError.orig(test, err)
-            extend_error()
+            extend_error(result.errors)
 
         @override
         def addFailure(test, err):
             addFailure.orig(test, err)
-            extend_error()
+            extend_error(result.failures)
 
         return result
 
