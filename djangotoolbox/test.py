@@ -1,5 +1,12 @@
 from .utils import object_list_to_table, equal_lists
 from django.test import TestCase
+from django.test.simple import DjangoTestSuiteRunner, DjangoTestRunner
+import sys
+
+try:
+    from StringIO import StringIO
+except ImportError:
+    from cStringIO import StringIO
 
 class ModelTestCase(TestCase):
     """
@@ -37,3 +44,56 @@ class ModelTestCase(TestCase):
             for state in state_table:
                 print state
             self.fail('DB state not valid')
+
+class CapturingTestRunner(DjangoTestRunner):
+    def _makeResult(self):
+        result = super(CapturingTestRunner, self)._makeResult()
+        stdout = sys.stdout
+        stderr = sys.stderr
+
+        def extend_error():
+            captured_stdout = sys.stdout.getvalue()
+            captured_stderr = sys.stderr.getvalue()
+            sys.stdout = stdout
+            sys.stderr = stderr
+            t, e = result.failures[-1]
+            if captured_stdout:
+                e += '\n--------------- Captured stdout: ---------------\n'
+                e += captured_stdout
+            if captured_stderr:
+                e += '\n--------------- Captured stderr: ---------------\n'
+                e += captured_stderr
+            result.failures[-1] = (t, e)
+
+        def override(func):
+            func.orig = getattr(result, func.__name__)
+            setattr(result, func.__name__, func)
+            return func
+
+        @override
+        def startTest(test):
+            startTest.orig(test)
+            sys.stdout = StringIO()
+            sys.stderr = StringIO()
+
+        @override
+        def addSuccess(test):
+            addSuccess.orig(test)
+            sys.stdout = stdout
+            sys.stderr = stderr
+
+        @override
+        def addError(test, err):
+            addError.orig(test, err)
+            extend_error()
+
+        @override
+        def addFailure(test, err):
+            addFailure.orig(test, err)
+            extend_error()
+
+        return result
+
+class CapturingTestSuiteRunner(DjangoTestSuiteRunner):
+    def run_suite(self, suite, **kwargs):
+        return CapturingTestRunner(verbosity=self.verbosity, failfast=self.failfast).run(suite)
