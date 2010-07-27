@@ -4,8 +4,9 @@ except NameError:
     from sets import Set as set # Python 2.3 fallback
 
 from django.db import connection
-from djangotoolbox.contrib.auth.models import User, Permission, Group
+from django.contrib.auth.models import User, Permission, Group
 from django.contrib.contenttypes.models import ContentType
+from djangotoolbox.contrib.auth.models import PermissionList
 
 
 class ModelBackend(object):
@@ -50,8 +51,13 @@ class ModelBackend(object):
         if user_obj.is_anonymous():
             return set()
         if not hasattr(user_obj, '_perm_cache'):
-            user_obj._perm_cache = set([u"%s.%s" % (p.content_type.app_label, p.codename) for p in user_obj.user_permissions])
-            user_obj._perm_cache.update(self.get_group_permissions(user_obj))
+            try:
+                pl = PermissionList.objects.get(user=user_obj)
+                user_obj._perm_cache = set([u"%s.%s" % (p.content_type.app_label, p.codename) for p in pl.permission_list])
+            except PermissionList.DoesNotExist:
+                user_obj._perm_cache = list()
+                pass
+            #user_obj._perm_cache.update(self.get_group_permissions(user_obj))
         return user_obj._perm_cache
 
     def has_perm(self, user_obj, perm):
