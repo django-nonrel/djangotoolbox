@@ -6,7 +6,7 @@ except NameError:
 from django.db import connection
 from django.contrib.auth.models import User, Permission, Group
 from django.contrib.contenttypes.models import ContentType
-from djangotoolbox.contrib.auth.models import PermissionList
+from djangotoolbox.contrib.auth.models import UserPermissionList, GroupPermissionList, GroupList
 
 
 class ModelBackend(object):
@@ -52,9 +52,9 @@ class ModelBackend(object):
             return set()
         if not hasattr(user_obj, '_perm_cache'):
             try:
-                pl = PermissionList.objects.get(user=user_obj)
+                pl = UserPermissionList.objects.get(user=user_obj)
                 user_obj._perm_cache = set([u"%s.%s" % (p.content_type.app_label, p.codename) for p in pl.permission_list])
-            except PermissionList.DoesNotExist:
+            except UserPermissionList.DoesNotExist:
                 user_obj._perm_cache = list()
                 pass
             #user_obj._perm_cache.update(self.get_group_permissions(user_obj))
