@@ -4,28 +4,26 @@ except NameError:
     from sets import Set as set # Python 2.3 fallback
 
 from django.db import connection
+from django.contrib.auth.backends import ModelBackend
 from django.contrib.auth.models import User, Permission, Group
 from django.contrib.contenttypes.models import ContentType
 from djangotoolbox.contrib.auth.models import UserPermissionList, GroupPermissionList, GroupList
 
 
-class ModelBackend(object):
+class NonrelModelBackend(object):
     """
     Authenticates against djangotoolbox.contrib.auth.models.User.
     """
     supports_object_permissions = False
     supports_anonymous_user = True
 
+    django_backend = ModelBackend() # use default django backend for authentication
+    
     # TODO: Model, login attribute name and password attribute name should be
     # configurable.
     def authenticate(self, username=None, password=None):
-        try:
-            user = User.objects.get(username=username)
-            if user.check_password(password):
-                return user
-        except User.DoesNotExist:
-            return None
-
+        return self.django_backend.authenticate(username, password)
+ 
     def get_group_permissions(self, user_obj):
         """
         Returns a set of permission strings that this user has through his/her
