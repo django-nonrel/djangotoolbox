@@ -20,8 +20,9 @@ class UserPermissionList(models.Model):
         return self._permissions_cache
     permission_list = property(_get_permissions)
 
+
 class GroupPermissionList(models.Model):
-    user = models.ForeignKey(Group)
+    group = models.ForeignKey(Group)
     _permission_list = ListField(models.ForeignKey(Permission))
 
     def _get_permissions(self):
@@ -34,11 +35,28 @@ class GroupPermissionList(models.Model):
             setattr(self, '_permissions_cache', permissions)
             
         return self._permissions_cache
-    permission_list = property(_get_permissions)
+    permissions = property(_get_permissions)
 
 class GroupList(models.Model):
     """
     GroupLists are used to map a list of groups to a user
     """
-    group = models.ForeignKey(Group)
-    groups = ListField(models.ForeignKey(Group))
+    user = models.ForeignKey(User)
+    _group_list = ListField(models.ForeignKey(Group))
+
+    def __unicode__(self):
+        return u'%s' %(self.user.username)
+    
+    def _get_group_list(self):
+        if not hasattr(self, '_groups_cache'):
+            group_ids = self._group_list
+            groups = set()
+            if len(group_ids) > 0:
+                # order_by() has to be used to override invalid default Permission filter
+                groups.update(Group.objects.filter(id__in=group_ids))
+            setattr(self, '_groups_cache', groups)
+            
+        return self._groups_cache
+    groups = property(_get_group_list)
+
+    

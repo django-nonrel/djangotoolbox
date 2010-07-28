@@ -32,18 +32,21 @@ class ModelBackend(object):
         groups.
         """
         if not hasattr(user_obj, '_group_perm_cache'):
-                  
-            perm_ids = set()
-            for group in user_obj.groups:
-                perm_ids.update(group.permissions.permissions)
-
-            if len(perm_ids) > 0:
-                q = Permission.objects.filter(id__in=perm_ids)
-            else:
-                q = list()
-                
-            perms = list([[perm.content_type.app_label, perm.codename] for perm in q])
-  
+            perm_objs = set([])
+            try:
+                gl = GroupList.objects.get(user=user_obj)
+                group_ids = gl._group_list
+                if len(group_ids) > 0:
+                    group_permissions = set()
+                    for group_id in group_ids:
+                        group_permissions.update(GroupPermissionList.objects.filter(group__id=group_id))
+                    for group_perm in group_permissions:
+                        perm_objs.update(group_perm.permissions)
+                    
+            except GroupList.DoesNotExist:
+                pass
+            
+            perms = list([[perm.content_type.app_label, perm.codename] for perm in perm_objs])
             user_obj._group_perm_cache = set(["%s.%s" % (ct, name) for ct, name in perms])
         return user_obj._group_perm_cache
 
@@ -55,9 +58,9 @@ class ModelBackend(object):
                 pl = UserPermissionList.objects.get(user=user_obj)
                 user_obj._perm_cache = set([u"%s.%s" % (p.content_type.app_label, p.codename) for p in pl.permission_list])
             except UserPermissionList.DoesNotExist:
-                user_obj._perm_cache = list()
+                user_obj._perm_cache = set()
                 pass
-            #user_obj._perm_cache.update(self.get_group_permissions(user_obj))
+            user_obj._perm_cache.update(self.get_group_permissions(user_obj))
         return user_obj._perm_cache
 
     def has_perm(self, user_obj, perm):
