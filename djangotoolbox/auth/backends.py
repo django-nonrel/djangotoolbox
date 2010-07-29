@@ -11,20 +11,13 @@ from django.contrib.contenttypes.models import ContentType
 from djangotoolbox.auth.models import UserPermissionList, GroupPermissionList, GroupList
 
 
-class NonrelModelBackend(object):
+class NonrelPermissionBackend(ModelBackend):
     """
-    Authenticates against djangotoolbox.contrib.auth.models.User.
+    Implements Django's permission system on Django-Nonrel
     """
     supports_object_permissions = False
     supports_anonymous_user = True
 
-    django_backend = ModelBackend() # use default django backend for authentication
-    
-    # TODO: Model, login attribute name and password attribute name should be
-    # configurable.
-    def authenticate(self, username=None, password=None):
-        return self.django_backend.authenticate(username, password)
- 
     def get_group_permissions(self, user_obj):
         """
         Returns a set of permission strings that this user has through his/her
