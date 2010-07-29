@@ -25,7 +25,7 @@ class BackendTest(TestCase):
         add_permission_to_user(perm, user)
         self.assertEqual(UserPermissionList.objects.count(), 1)
         pl = UserPermissionList.objects.all()[0]
-        self.assertEqual(pl.permission_list , set([perm]))
+        self.assertEqual(pl.permissions , set([perm]))
         self.assertEqual(user.has_perm('auth.test'), True)
 
     def test_add_user_to_group(self):

@@ -18,7 +18,7 @@ class UserPermissionList(models.Model):
         if not hasattr(self, '_permissions_cache'):
             setattr(self, '_permissions_cache', get_objs(Permission, self._fk_list))            
         return self._permissions_cache
-    permission_list = property(_get_permissions)
+    permissions = property(_get_permissions)
 
 
 class GroupPermissionList(models.Model):

@@ -54,7 +54,7 @@ class NonrelModelBackend(object):
         if not hasattr(user_obj, '_perm_cache'):
             try:
                 pl = UserPermissionList.objects.get(user=user_obj)
-                user_obj._perm_cache = set([u"%s.%s" % (p.content_type.app_label, p.codename) for p in pl.permission_list])
+                user_obj._perm_cache = set([u"%s.%s" % (p.content_type.app_label, p.codename) for p in pl.permissions])
             except UserPermissionList.DoesNotExist:
                 user_obj._perm_cache = set()
                 pass
