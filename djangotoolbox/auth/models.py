@@ -13,22 +13,22 @@ def get_objs(obj_cls, obj_ids):
 
 class UserPermissionList(models.Model):
     user = models.ForeignKey(User)
-    _fk_list = ListField(models.ForeignKey(Permission))
+    fk_list = ListField(models.ForeignKey(Permission))
 
     def _get_permissions(self):
         if not hasattr(self, '_permissions_cache'):
-            setattr(self, '_permissions_cache', get_objs(Permission, self._fk_list))            
+            setattr(self, '_permissions_cache', get_objs(Permission, self.fk_list))            
         return self._permissions_cache
     permissions = property(_get_permissions)
 
 
 class GroupPermissionList(models.Model):
     group = models.ForeignKey(Group)
-    _fk_list = ListField(models.ForeignKey(Permission))
+    fk_list = ListField(models.ForeignKey(Permission))
 
     def _get_permissions(self):
         if not hasattr(self, '_permissions_cache'):
-            setattr(self, '_permissions_cache', get_objs(Permission, self._fk_list))            
+            setattr(self, '_permissions_cache', get_objs(Permission, self.fk_list))            
         return self._permissions_cache
     permissions = property(_get_permissions)
 
@@ -37,13 +37,13 @@ class GroupList(models.Model):
     GroupLists are used to map a list of groups to a user
     """
     user = models.ForeignKey(User)
-    _fk_list = ListField(models.ForeignKey(Group))
+    fk_list = ListField(models.ForeignKey(Group))
 
     def __unicode__(self):
         return u'%s' %(self.user.username)
     
     def _get_group_list(self):
         if not hasattr(self, '_groups_cache'):
-            setattr(self, '_groups_cache', get_objs(Group, self._fk_list))
+            setattr(self, '_groups_cache', get_objs(Group, self.fk_list))
         return self._groups_cache
     groups = property(_get_group_list)

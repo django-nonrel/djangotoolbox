@@ -3,7 +3,7 @@ from djangotoolbox.auth.models import UserPermissionList, GroupPermissionList, G
 def add_to(obj, list_cls, filter):
     obj_list, created = list_cls.objects.get_or_create(**filter)
 
-    obj_list._fk_list.append(obj.id)
+    obj_list.fk_list.append(obj.id)
     obj_list.save()
 
 def add_permission_to_user(perm, user):

@@ -34,7 +34,7 @@ class NonrelModelBackend(object):
             perm_objs = set([])
             try:
                 gl = GroupList.objects.get(user=user_obj)
-                group_ids = gl._fk_list
+                group_ids = gl.fk_list
                 if len(group_ids) > 0:
                     group_permissions = set()
                     for group_id in group_ids:
