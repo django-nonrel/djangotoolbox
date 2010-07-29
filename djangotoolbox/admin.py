@@ -1,7 +1,10 @@
 from django import forms
 from django.contrib import admin
-from django.contrib.auth.admin import UserAdmin
-from django.contrib.auth.models import User, Group
+from django.contrib.auth.admin import UserAdmin, GroupAdmin
+from django.contrib.auth.models import User, Group, Permission
+
+from djangotoolbox.auth.models import UserPermissionList
+
 
 class UserForm(forms.ModelForm):
     class Meta:
@@ -13,6 +16,28 @@ class CustomUserAdmin(UserAdmin):
   fieldsets = None
   form = UserForm
 
+
+class GroupForm(forms.ModelForm):
+    class Meta:
+        model = Group
+        exclude = ('permissions')
+
+
+class CustomGroupAdmin(GroupAdmin):
+    fieldsets = None
+    form = GroupForm
+
+
+class PermissionAdmin(admin.ModelAdmin):
+    ordering = ('codename',)
+
+class UserPermissionListAdmin(admin.ModelAdmin):
+    pass
+
+admin.site.register(UserPermissionList, UserPermissionListAdmin)
+admin.site.register(Permission, PermissionAdmin)
+
 admin.site.unregister(User)
 admin.site.unregister(Group)
-admin.site.register(User, CustomUserAdmin) 
+admin.site.register(User, CustomUserAdmin)
+admin.site.register(Group, CustomGroupAdmin) 
