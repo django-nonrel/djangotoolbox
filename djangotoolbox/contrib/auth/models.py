@@ -6,11 +6,11 @@ from djangotoolbox.fields import ListField
         
 class UserPermissionList(models.Model):
     user = models.ForeignKey(User)
-    _permission_list = ListField(models.ForeignKey(Permission))
+    _fk_list = ListField(models.ForeignKey(Permission))
 
     def _get_permissions(self):
         if not hasattr(self, '_permissions_cache'):
-            perm_ids = self._permission_list
+            perm_ids = self._fk_list
             permissions = set()
             if len(perm_ids) > 0:
                 # order_by() has to be used to override invalid default Permission filter
@@ -23,11 +23,11 @@ class UserPermissionList(models.Model):
 
 class GroupPermissionList(models.Model):
     group = models.ForeignKey(Group)
-    _permission_list = ListField(models.ForeignKey(Permission))
+    _fk_list = ListField(models.ForeignKey(Permission))
 
     def _get_permissions(self):
         if not hasattr(self, '_permissions_cache'):
-            perm_ids = self._permission_list
+            perm_ids = self._fk_list
             permissions = set()
             if len(perm_ids) > 0:
                 # order_by() has to be used to override invalid default Permission filter
@@ -42,14 +42,14 @@ class GroupList(models.Model):
     GroupLists are used to map a list of groups to a user
     """
     user = models.ForeignKey(User)
-    _group_list = ListField(models.ForeignKey(Group))
+    _fk_list = ListField(models.ForeignKey(Group))
 
     def __unicode__(self):
         return u'%s' %(self.user.username)
     
     def _get_group_list(self):
         if not hasattr(self, '_groups_cache'):
-            group_ids = self._group_list
+            group_ids = self._fk_list
             groups = set()
             if len(group_ids) > 0:
                 # order_by() has to be used to override invalid default Permission filter
