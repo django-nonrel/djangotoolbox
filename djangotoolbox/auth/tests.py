@@ -5,8 +5,8 @@ from django.contrib.auth.models import User, Group, Permission, AnonymousUser
 from django.contrib.contenttypes.models import ContentType
 from django.test import TestCase
 
-from djangotoolbox.contrib.auth.models import UserPermissionList, GroupPermissionList, GroupList
-from djangotoolbox.contrib.auth.utils import add_permission_to_user, add_user_to_group, add_permission_to_group
+from djangotoolbox.auth.models import UserPermissionList, GroupPermissionList, GroupList
+from djangotoolbox.auth.utils import add_permission_to_user, add_user_to_group, add_permission_to_group
 
 
 class BackendTest(TestCase):

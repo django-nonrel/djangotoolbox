@@ -3,6 +3,7 @@ from django.contrib.auth.models import User, Group, Permission
 
 from djangotoolbox.fields import ListField
 
+
 def get_objs(obj_cls, obj_ids):
     objs = set()
     if len(obj_ids) > 0:

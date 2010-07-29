@@ -1,4 +1,4 @@
-from djangotoolbox.contrib.auth.models import UserPermissionList, GroupPermissionList, GroupList
+from djangotoolbox.auth.models import UserPermissionList, GroupPermissionList, GroupList
 
 def add_to(obj, list_cls, filter):
     try:

@@ -7,7 +7,8 @@ from django.db import connection
 from django.contrib.auth.backends import ModelBackend
 from django.contrib.auth.models import User, Permission, Group
 from django.contrib.contenttypes.models import ContentType
-from djangotoolbox.contrib.auth.models import UserPermissionList, GroupPermissionList, GroupList
+
+from djangotoolbox.auth.models import UserPermissionList, GroupPermissionList, GroupList
 
 
 class NonrelModelBackend(object):
