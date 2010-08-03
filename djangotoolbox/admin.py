@@ -3,12 +3,13 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin, GroupAdmin
 from django.contrib.auth.models import User, Group, Permission
 
-from djangotoolbox.auth.utils import update_permissions_user
-from djangotoolbox.auth.models import UserPermissionList
+from djangotoolbox.auth.utils import update_permissions_user, update_user_groups
+from djangotoolbox.auth.models import UserPermissionList, GroupList
 
 
 class UserForm(forms.ModelForm):
     permissions = forms.MultipleChoiceField(required=False)
+    groups = forms.MultipleChoiceField(required=False)
     
     def __init__(self, *args, **kwargs):
         super(UserForm, self).__init__(*args, **kwargs)
@@ -17,15 +18,28 @@ class UserForm(forms.ModelForm):
         choices = list ()
         for perm_obj in permissions_objs:
             choices.append([perm_obj.id, perm_obj.name])
+        self.fields['permissions'].choices = choices
+        
+        group_objs = Group.objects.all()
+        choices = list ()
+        for group_obj in group_objs:
+            choices.append([group_obj.id, group_obj.name])
+        self.fields['groups'].choices = choices
 
-        selected = list()
+
         try:
             user_perm_list = UserPermissionList.objects.get(user=kwargs['instance'])
             self.fields['permissions'].initial = user_perm_list.fk_list
         except UserPermissionList.DoesNotExist:
             pass
+
+        try:
+            user_group_list = GroupList.objects.get(user=kwargs['instance'])
+            self.fields['groups'].initial = user_group_list.fk_list
+        except GroupList.DoesNotExist:
+            pass
                                     
-        self.fields['permissions'].choices = choices
+        
         
     class Meta:
         model = User
@@ -44,14 +58,32 @@ class CustomUserAdmin(UserAdmin):
             permissions = list(Permission.objects.filter(id__in=form.cleaned_data['permissions']).order_by('name'))
         else:
             permissions = list()
+            
 
         update_permissions_user(permissions, obj)
 
+        if len(form.cleaned_data['groups']) > 0:
+            groups = list(Group.objects.filter(id__in=form.cleaned_data['groups']))
+        else:
+            groups = list()
+
+        update_user_groups(obj, groups)
                 
 class PermissionAdmin(admin.ModelAdmin):
     ordering = ('name',)
 
 
+class GroupForm(forms.ModelForm):
+    class Meta:
+        model = Group
+        fields = ('name',)
+        
+class CustomGroupAdmin(admin.ModelAdmin):
+    form = GroupForm
+    fieldsets = None
+
 admin.site.unregister(User)
+admin.site.unregister(Group)
+admin.site.register(Group, CustomGroupAdmin)
 admin.site.register(User, CustomUserAdmin)
 admin.site.register(Permission, PermissionAdmin)
