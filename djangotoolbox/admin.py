@@ -30,14 +30,14 @@ class UserForm(forms.ModelForm):
         try:
             user_perm_list = UserPermissionList.objects.get(user=kwargs['instance'])
             self.fields['permissions'].initial = user_perm_list.fk_list
-        except UserPermissionList.DoesNotExist:
-            pass
-
+        except (UserPermissionList.DoesNotExist, KeyError):
+            self.fields['permissions'].initial = list()
+            
         try:
             user_group_list = GroupList.objects.get(user=kwargs['instance'])
             self.fields['groups'].initial = user_group_list.fk_list
-        except GroupList.DoesNotExist:
-            pass
+        except (GroupList.DoesNotExist, KeyError):
+            self.fields['groups'].initial = list()
                                     
         
         
@@ -88,8 +88,8 @@ class GroupForm(forms.ModelForm):
         try:
             current_perm_list = GroupPermissionList.objects.get(group=kwargs['instance'])
             self.fields['permissions'].initial = current_perm_list.fk_list
-        except UserPermissionList.DoesNotExist:
-            pass
+        except (GroupPermissionList.DoesNotExist, KeyError):
+            self.fields['permissions'].initial = list()
         
     class Meta:
         model = Group
