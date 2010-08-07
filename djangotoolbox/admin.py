@@ -3,8 +3,8 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin, GroupAdmin
 from django.contrib.auth.models import User, Group, Permission
 
-from djangotoolbox.auth.utils import update_permissions_user, update_user_groups
-from djangotoolbox.auth.models import UserPermissionList, GroupList
+from djangotoolbox.auth.utils import update_permissions_user, update_user_groups, update_permissions_group
+from djangotoolbox.auth.models import UserPermissionList, GroupList, GroupPermissionList
 
 
 class UserForm(forms.ModelForm):
@@ -74,13 +74,41 @@ class PermissionAdmin(admin.ModelAdmin):
 
 
 class GroupForm(forms.ModelForm):
+    permissions = forms.MultipleChoiceField(required=False)
+    
+    def __init__(self, *args, **kwargs):
+        super(GroupForm, self).__init__(*args, **kwargs)
+   
+        permissions_objs = Permission.objects.all().order_by('name')
+        choices = list ()
+        for perm_obj in permissions_objs:
+            choices.append([perm_obj.id, perm_obj.name])
+        self.fields['permissions'].choices = choices
+
+        try:
+            current_perm_list = GroupPermissionList.objects.get(group=kwargs['instance'])
+            self.fields['permissions'].initial = current_perm_list.fk_list
+        except UserPermissionList.DoesNotExist:
+            pass
+        
     class Meta:
         model = Group
         fields = ('name',)
-        
+
 class CustomGroupAdmin(admin.ModelAdmin):
     form = GroupForm
     fieldsets = None
+
+    def save_model(self, request, obj, form, change):
+        super(CustomGroupAdmin, self).save_model(request, obj, form, change)
+
+        if len(form.cleaned_data['permissions']) > 0:
+            permissions = list(Permission.objects.filter(id__in=form.cleaned_data['permissions']).order_by('name'))
+        else:
+            permissions = list()
+            
+
+        update_permissions_group(permissions, obj)
 
 admin.site.unregister(User)
 admin.site.unregister(Group)
