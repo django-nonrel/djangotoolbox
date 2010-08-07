@@ -29,6 +29,7 @@ class BackendTest(TestCase):
         pl = UserPermissionList.objects.all()[0]
         self.assertEqual(pl.permissions , set([perm]))
         self.assertEqual(user.has_perm('auth.test'), True)
+        self.assertEqual(user.has_perm('auth.test23x'), False)
 
     def test_add_user_to_group(self):
         user = User.objects.get(username='test')
@@ -52,6 +53,7 @@ class BackendTest(TestCase):
         gl = GroupPermissionList.objects.all()[0]
         self.assertEqual(gl.permissions , set([perm]))
         self.assertEqual(user.has_perm('auth.test'), True)
+        self.assertEqual(user.has_perm('auth.test2312'), False)
         
     def test_has_perm(self):
         user = User.objects.get(username='test')
