@@ -1,3 +1,4 @@
+import settings
 from django import forms
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
@@ -8,8 +9,14 @@ from djangotoolbox.auth.utils import update_permissions_user, \
 from djangotoolbox.auth.models import UserPermissionList, GroupList, \
      GroupPermissionList
 
-
 class UserForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ('username', 'email', 'first_name', 'last_name', 'is_active',
+                  'is_staff', 'is_superuser')
+
+
+class NonrelPermissionUserForm(UserForm):
     permissions = forms.MultipleChoiceField(required=False)
     groups = forms.MultipleChoiceField(required=False)
     
@@ -42,15 +49,15 @@ class UserForm(forms.ModelForm):
         except (GroupList.DoesNotExist, KeyError):
             self.fields['groups'].initial = list()
                                     
-    class Meta:
-        model = User
-        fields = ('username', 'email', 'first_name', 'last_name', 'is_active',
-                  'is_staff', 'is_superuser',)
-
 
 class CustomUserAdmin(UserAdmin):
     fieldsets = None
     form = UserForm
+    
+
+class NonrelPermissionCustomUserAdmin(UserAdmin):
+    fieldsets = None
+    form = NonrelPermissionUserForm
     
     def save_model(self, request, obj, form, change):
         super(CustomUserAdmin, self).save_model(request, obj, form, change)
@@ -71,7 +78,8 @@ class CustomUserAdmin(UserAdmin):
             groups = list()
 
         update_user_groups(obj, groups)
-                
+
+
 class PermissionAdmin(admin.ModelAdmin):
     ordering = ('name',)
 
@@ -117,6 +125,17 @@ class CustomGroupAdmin(admin.ModelAdmin):
 
 admin.site.unregister(User)
 admin.site.unregister(Group)
-admin.site.register(Group, CustomGroupAdmin)
-admin.site.register(User, CustomUserAdmin)
-admin.site.register(Permission, PermissionAdmin)
+
+nonrel_backend = False
+backends = getattr(settings, 'AUTHENTICATION_BACKENDS', list())
+for backend in backends:
+    if backend ==  'djangotoolbox.auth.backends.NonrelPermissionBackend':
+        nonrel_backend = True
+
+if nonrel_backend:
+    admin.site.register(User, NonrelPermissionCustomUserAdmin)
+    admin.site.register(Permission, PermissionAdmin)
+    admin.site.register(Group, CustomGroupAdmin)
+else:
+    admin.site.register(User, CustomUserAdmin)
+
