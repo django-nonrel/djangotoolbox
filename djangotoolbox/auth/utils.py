@@ -37,7 +37,7 @@ def update_list(objs, list_cls, filter):
 def update_permissions_user(perms, user):
     update_list(perms, UserPermissionList, {'user': user})
 
-def update_permissions_group(perms, grouo):
+def update_permissions_group(perms, group):
     update_list(perms, GroupPermissionList, {'group': group})
 
 def update_user_groups(user, group):
