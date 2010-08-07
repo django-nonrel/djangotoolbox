@@ -1,10 +1,12 @@
 from django import forms
 from django.contrib import admin
-from django.contrib.auth.admin import UserAdmin, GroupAdmin
+from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User, Group, Permission
 
-from djangotoolbox.auth.utils import update_permissions_user, update_user_groups, update_permissions_group
-from djangotoolbox.auth.models import UserPermissionList, GroupList, GroupPermissionList
+from djangotoolbox.auth.utils import update_permissions_user,\
+     update_user_groups, update_permissions_group
+from djangotoolbox.auth.models import UserPermissionList, GroupList, \
+     GroupPermissionList
 
 
 class UserForm(forms.ModelForm):
@@ -26,7 +28,6 @@ class UserForm(forms.ModelForm):
             choices.append([group_obj.id, group_obj.name])
         self.fields['groups'].choices = choices
 
-
         try:
             user_perm_list = UserPermissionList.objects.get(user=kwargs['instance'])
             self.fields['permissions'].initial = user_perm_list.fk_list
@@ -39,8 +40,6 @@ class UserForm(forms.ModelForm):
         except (GroupList.DoesNotExist, KeyError):
             self.fields['groups'].initial = list()
                                     
-        
-        
     class Meta:
         model = User
         fields = ('username', 'email', 'first_name', 'last_name', 'is_active',

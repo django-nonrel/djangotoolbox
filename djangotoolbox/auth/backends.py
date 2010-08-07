@@ -3,10 +3,8 @@ try:
 except NameError:
     from sets import Set as set # Python 2.3 fallback
 
-from django.db import connection
 from django.contrib.auth.backends import ModelBackend
-from django.contrib.auth.models import User, Permission, Group
-from django.contrib.contenttypes.models import ContentType
+from django.contrib.auth.models import User
 
 from djangotoolbox.auth.models import UserPermissionList, GroupPermissionList, GroupList
 
