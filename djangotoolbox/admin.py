@@ -21,7 +21,7 @@ class NonrelPermissionUserForm(UserForm):
     groups = forms.MultipleChoiceField(required=False)
     
     def __init__(self, *args, **kwargs):
-        super(UserForm, self).__init__(*args, **kwargs)
+        super(NonrelPermissionUserForm, self).__init__(*args, **kwargs)
    
         permissions_objs = Permission.objects.all().order_by('name')
         choices = list ()
@@ -60,14 +60,13 @@ class NonrelPermissionCustomUserAdmin(UserAdmin):
     form = NonrelPermissionUserForm
     
     def save_model(self, request, obj, form, change):
-        super(CustomUserAdmin, self).save_model(request, obj, form, change)
+        super(NonrelPermissionCustomUserAdmin, self).save_model(request, obj, form, change)
 
         if len(form.cleaned_data['permissions']) > 0:
             permissions = list(Permission.objects.filter(
                 id__in=form.cleaned_data['permissions']).order_by('name'))
         else:
             permissions = list()
-            
 
         update_permissions_user(permissions, obj)
 
@@ -126,13 +125,9 @@ class CustomGroupAdmin(admin.ModelAdmin):
 admin.site.unregister(User)
 admin.site.unregister(Group)
 
-nonrel_backend = False
 backends = getattr(settings, 'AUTHENTICATION_BACKENDS', list())
-for backend in backends:
-    if backend ==  'djangotoolbox.auth.backends.NonrelPermissionBackend':
-        nonrel_backend = True
-
-if nonrel_backend:
+backend_name = 'djangotoolbox.auth.backends.NonrelPermissionBackend'
+if backend_name in backends:
     admin.site.register(User, NonrelPermissionCustomUserAdmin)
     admin.site.register(Permission, PermissionAdmin)
     admin.site.register(Group, CustomGroupAdmin)
