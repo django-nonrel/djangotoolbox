@@ -17,23 +17,23 @@ class UserForm(forms.ModelForm):
 
 
 class NonrelPermissionUserForm(UserForm):
-    permissions = forms.MultipleChoiceField(required=False)
+    user_permissions = forms.MultipleChoiceField(required=False)
     groups = forms.MultipleChoiceField(required=False)
     
     def __init__(self, *args, **kwargs):
         super(NonrelPermissionUserForm, self).__init__(*args, **kwargs)
 
-        self.fields['permissions'] = forms.MultipleChoiceField(required=False)
+        self.fields['user_permissions'] = forms.MultipleChoiceField(required=False)
         self.fields['groups'] = forms.MultipleChoiceField(required=False)
         
         permissions_objs = Permission.objects.all().order_by('name')
-        choices = list ()
+        choices = []
         for perm_obj in permissions_objs:
             choices.append([perm_obj.id, perm_obj.name])
-        self.fields['permissions'].choices = choices
+        self.fields['user_permissions'].choices = choices
         
         group_objs = Group.objects.all()
-        choices = list ()
+        choices = []
         for group_obj in group_objs:
             choices.append([group_obj.id, group_obj.name])
         self.fields['groups'].choices = choices
@@ -41,9 +41,9 @@ class NonrelPermissionUserForm(UserForm):
         try:
             user_perm_list = UserPermissionList.objects.get(
                 user=kwargs['instance'])
-            self.fields['permissions'].initial = user_perm_list.fk_list
+            self.fields['user_permissions'].initial = user_perm_list.fk_list
         except (UserPermissionList.DoesNotExist, KeyError):
-            self.fields['permissions'].initial = list()
+            self.fields['user_permissions'].initial = list()
             
         try:
             user_group_list = GroupList.objects.get(
@@ -65,17 +65,17 @@ class NonrelPermissionCustomUserAdmin(UserAdmin):
     def save_model(self, request, obj, form, change):
         super(NonrelPermissionCustomUserAdmin, self).save_model(request, obj, form, change)
 
-        if len(form.cleaned_data['permissions']) > 0:
-            permissions = [Permission.objects.filter(
-                id__in=form.cleaned_data['permissions']).order_by('name')]
+        if len(form.cleaned_data['user_permissions']) > 0:
+            permissions = list(Permission.objects.filter(
+                id__in=form.cleaned_data['user_permissions']).order_by('name'))
         else:
             permissions = []
 
         update_permissions_user(permissions, obj)
 
         if len(form.cleaned_data['groups']) > 0:
-            groups = [Group.objects.filter(
-                id__in=form.cleaned_data['groups'])]
+            groups = list(Group.objects.filter(
+                id__in=form.cleaned_data['groups']))
         else:
             groups = []
 
@@ -120,8 +120,8 @@ class CustomGroupAdmin(admin.ModelAdmin):
         super(CustomGroupAdmin, self).save_model(request, obj, form, change)
 
         if len(form.cleaned_data['permissions']) > 0:
-            permissions = [Permission.objects.filter(
-                id__in=form.cleaned_data['permissions']).order_by('name')]
+            permissions = list(Permission.objects.filter(
+                id__in=form.cleaned_data['permissions']).order_by('name'))
         else:
             permissions = []
             
