@@ -131,9 +131,8 @@ class CustomGroupAdmin(admin.ModelAdmin):
 admin.site.unregister(User)
 admin.site.unregister(Group)
 
-backends = getattr(settings, 'AUTHENTICATION_BACKENDS', list())
 backend_name = 'djangotoolbox.auth.backends.NonrelPermissionBackend'
-if backend_name in backends:
+if backend_name in settings.AUTHENTICATION_BACKENDS:
     admin.site.register(User, NonrelPermissionCustomUserAdmin)
     admin.site.register(Permission, PermissionAdmin)
     admin.site.register(Group, CustomGroupAdmin)
