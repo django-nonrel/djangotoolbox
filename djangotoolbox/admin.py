@@ -66,18 +66,18 @@ class NonrelPermissionCustomUserAdmin(UserAdmin):
         super(NonrelPermissionCustomUserAdmin, self).save_model(request, obj, form, change)
 
         if len(form.cleaned_data['permissions']) > 0:
-            permissions = list(Permission.objects.filter(
-                id__in=form.cleaned_data['permissions']).order_by('name'))
+            permissions = [Permission.objects.filter(
+                id__in=form.cleaned_data['permissions']).order_by('name')]
         else:
-            permissions = list()
+            permissions = []
 
         update_permissions_user(permissions, obj)
 
         if len(form.cleaned_data['groups']) > 0:
-            groups = list(Group.objects.filter(
-                id__in=form.cleaned_data['groups']))
+            groups = [Group.objects.filter(
+                id__in=form.cleaned_data['groups'])]
         else:
-            groups = list()
+            groups = []
 
         update_user_groups(obj, groups)
 
@@ -95,7 +95,7 @@ class GroupForm(forms.ModelForm):
         self.fields['permissions'] = forms.MultipleChoiceField(required=False)
    
         permissions_objs = Permission.objects.all().order_by('name')
-        choices = list ()
+        choices = []
         for perm_obj in permissions_objs:
             choices.append([perm_obj.id, perm_obj.name])
         self.fields['permissions'].choices = choices
@@ -105,11 +105,12 @@ class GroupForm(forms.ModelForm):
                 group=kwargs['instance'])
             self.fields['permissions'].initial = current_perm_list.fk_list
         except (GroupPermissionList.DoesNotExist, KeyError):
-            self.fields['permissions'].initial = list()
+            self.fields['permissions'].initial = []
         
     class Meta:
         model = Group
         fields = ('name',)
+
 
 class CustomGroupAdmin(admin.ModelAdmin):
     form = GroupForm
@@ -119,10 +120,10 @@ class CustomGroupAdmin(admin.ModelAdmin):
         super(CustomGroupAdmin, self).save_model(request, obj, form, change)
 
         if len(form.cleaned_data['permissions']) > 0:
-            permissions = list(Permission.objects.filter(
-                id__in=form.cleaned_data['permissions']).order_by('name'))
+            permissions = [Permission.objects.filter(
+                id__in=form.cleaned_data['permissions']).order_by('name')]
         else:
-            permissions = list()
+            permissions = []
             
 
         update_permissions_group(permissions, obj)
