@@ -283,7 +283,7 @@ class NonrelCompiler(SQLCompiler):
 
     def get_fields(self):
         """
-        Returns the fields which should get loaded from the backend by self.query        
+        Returns the fields which should get loaded from the backend by self.query
         """
         # We only set this up here because
         # related_select_fields isn't populated until

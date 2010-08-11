@@ -10,9 +10,6 @@ from djangotoolbox.auth.utils import add_permission_to_user, \
 
 
 class BackendTest(TestCase):
-
-    backend = 'djangotoolbox.contrib.auth.backends.NonrelModelBackend'
-
     def setUp(self):
         User.objects.create_user('test', 'test@example.com', 'test')
 
