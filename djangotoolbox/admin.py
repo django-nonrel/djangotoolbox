@@ -22,7 +22,10 @@ class NonrelPermissionUserForm(UserForm):
     
     def __init__(self, *args, **kwargs):
         super(NonrelPermissionUserForm, self).__init__(*args, **kwargs)
-   
+
+        self.fields['permissions'] = forms.MultipleChoiceField(required=False)
+        self.fields['groups'] = forms.MultipleChoiceField(required=False)
+        
         permissions_objs = Permission.objects.all().order_by('name')
         choices = list ()
         for perm_obj in permissions_objs:
@@ -48,7 +51,7 @@ class NonrelPermissionUserForm(UserForm):
             self.fields['groups'].initial = user_group_list.fk_list
         except (GroupList.DoesNotExist, KeyError):
             self.fields['groups'].initial = list()
-                                    
+
 
 class CustomUserAdmin(UserAdmin):
     fieldsets = None
@@ -88,6 +91,8 @@ class GroupForm(forms.ModelForm):
     
     def __init__(self, *args, **kwargs):
         super(GroupForm, self).__init__(*args, **kwargs)
+
+        self.fields['permissions'] = forms.MultipleChoiceField(required=False)
    
         permissions_objs = Permission.objects.all().order_by('name')
         choices = list ()
