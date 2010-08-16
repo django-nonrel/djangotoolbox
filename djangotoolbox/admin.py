@@ -1,20 +1,18 @@
-import settings
+from .auth.models import UserPermissionList, GroupList, \
+     GroupPermissionList
+from .auth.utils import update_permissions_user, \
+     update_user_groups, update_permissions_group
 from django import forms
+from django.conf import settings
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User, Group, Permission
-
-from djangotoolbox.auth.utils import update_permissions_user, \
-     update_user_groups, update_permissions_group
-from djangotoolbox.auth.models import UserPermissionList, GroupList, \
-     GroupPermissionList
 
 class UserForm(forms.ModelForm):
     class Meta:
         model = User
         fields = ('username', 'email', 'first_name', 'last_name', 'is_active',
                   'is_staff', 'is_superuser')
-
 
 class NonrelPermissionUserForm(UserForm):
     user_permissions = forms.MultipleChoiceField(required=False)
