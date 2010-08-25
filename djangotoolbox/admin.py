@@ -62,23 +62,27 @@ class NonrelPermissionCustomUserAdmin(UserAdmin):
     
     def save_model(self, request, obj, form, change):
         super(NonrelPermissionCustomUserAdmin, self).save_model(request, obj, form, change)
+        try:
+            if len(form.cleaned_data['user_permissions']) > 0:
+                permissions = list(Permission.objects.filter(
+                    id__in=form.cleaned_data['user_permissions']).order_by('name'))
+            else:
+                permissions = []
 
-        if len(form.cleaned_data['user_permissions']) > 0:
-            permissions = list(Permission.objects.filter(
-                id__in=form.cleaned_data['user_permissions']).order_by('name'))
-        else:
-            permissions = []
+            update_permissions_user(permissions, obj)
+        except KeyError:
+            pass
+        
+        try:
+            if len(form.cleaned_data['groups']) > 0:
+                groups = list(Group.objects.filter(
+                    id__in=form.cleaned_data['groups']))
+            else:
+                groups = []
 
-        update_permissions_user(permissions, obj)
-
-        if len(form.cleaned_data['groups']) > 0:
-            groups = list(Group.objects.filter(
-                id__in=form.cleaned_data['groups']))
-        else:
-            groups = []
-
-        update_user_groups(obj, groups)
-
+            update_user_groups(obj, groups)
+        except KeyError:
+            pass
 
 class PermissionAdmin(admin.ModelAdmin):
     ordering = ('name',)
