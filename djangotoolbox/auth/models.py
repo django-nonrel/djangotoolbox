@@ -15,22 +15,11 @@ class UserPermissionList(models.Model):
     user = models.ForeignKey(User)
     permission_list = ListField(models.CharField(max_length=128))
 
-    def _get_objs(self):
-        if not hasattr(self, '_permissions_cache'):
-            setattr(self, '_permissions_cache', get_objs(Permission, self.fk_list))            
-        return self._permissions_cache
-    permissions = property(_get_objs)
-
 
 class GroupPermissionList(models.Model):
     group = models.ForeignKey(Group)
     fk_list = ListField(models.ForeignKey(Permission))
 
-    def _get_objs(self):
-        if not hasattr(self, '_permissions_cache'):
-            setattr(self, '_permissions_cache', get_objs(Permission, self.fk_list))            
-        return self._permissions_cache
-    permissions = property(_get_objs)
 
 class GroupList(models.Model):
     """
