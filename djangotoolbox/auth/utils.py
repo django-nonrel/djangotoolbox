@@ -15,24 +15,31 @@ def add_user_to_group(user, group):
 def add_permission_to_group(perm, group):
     add_to(perm, GroupPermissionList, {'group': group})
 
-def update_list(objs, list_cls, filter):
-    obj_list, created = list_cls.objects.get_or_create(**filter)
+def update_list(perm_objs, list_cls, filter):
+    list_obj, created = list_cls.objects.get_or_create(**filter)
 
-    old_objs = list(obj_list._get_objs())
-    
-    for obj in old_objs:
-        try:
-            objs.index(obj)
+    old_perms = list_obj.permission_list
+
+    perm_strs = ['%s.%s' % (perm.content_type.app_label, perm.codename) for perm in perm_objs]
+
+    print old_perms
+    for perm in old_perms:
+        try: 
+            perm_strs.index(perm)
         except ValueError:
-            obj_list.fk_list.remove(obj.id)
-    
-    for obj in objs:
+            list_obj.permission_list.remove(perm)
+
+    print perm_strs
+    for perm in perm_strs:
         try:
-            old_objs.index(obj)
+            old_perms.index(perm)
         except ValueError:
-            obj_list.fk_list.append(obj.id)
-    
-    obj_list.save()
+            list_obj.permission_list.append(perm)
+
+    if len(perm_strs) == 0:
+        list_obj.permission_list = []
+        
+    list_obj.save()
     
 def update_permissions_user(perms, user):
     update_list(perms, UserPermissionList, {'user': user})

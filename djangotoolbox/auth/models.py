@@ -13,7 +13,7 @@ def get_objs(obj_cls, obj_ids):
 
 class UserPermissionList(models.Model):
     user = models.ForeignKey(User)
-    fk_list = ListField(models.ForeignKey(Permission))
+    permission_list = ListField(models.CharField(max_length=128))
 
     def _get_objs(self):
         if not hasattr(self, '_permissions_cache'):

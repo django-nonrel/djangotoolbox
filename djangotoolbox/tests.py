@@ -9,6 +9,7 @@ backend_name = 'djangotoolbox.auth.backends.NonrelPermissionBackend'
 if backend_name in settings.AUTHENTICATION_BACKENDS:
     from .auth.tests import BackendTest
 
+"""
 class ListModel(models.Model):
     floating_point = models.FloatField()
     names = ListField(models.CharField(max_length=500))
@@ -112,7 +113,7 @@ class FilterTest(TestCase):
                           ListModel.objects.filter(floating_point=9.1).filter(
                             names__startswith='Sa')], [['Kakashi', 'Naruto',
                             'Sasuke',],])
-
+"""
 # passes on production but not on sdk
 #    def test_Q_objects(self):
 #        self.assertEquals([entity.names for entity in
