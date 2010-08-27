@@ -22,14 +22,12 @@ def update_list(perm_objs, list_cls, filter):
 
     perm_strs = ['%s.%s' % (perm.content_type.app_label, perm.codename) for perm in perm_objs]
 
-    print old_perms
     for perm in old_perms:
         try: 
             perm_strs.index(perm)
         except ValueError:
             list_obj.permission_list.remove(perm)
 
-    print perm_strs
     for perm in perm_strs:
         try:
             old_perms.index(perm)
@@ -48,4 +46,22 @@ def update_permissions_group(perms, group):
     update_list(perms, GroupPermissionList, {'group': group})
 
 def update_user_groups(user, group):
-    update_list(group, GroupList, {'user': user})
+    objs = group
+    obj_list, created = GroupList.objects.get_or_create(user=user)
+
+    old_objs = list(obj_list._get_objs())
+    
+    for obj in old_objs:
+        try:
+            objs.index(obj)
+        except ValueError:
+            obj_list.fk_list.remove(obj.id)
+    
+    for obj in objs:
+        try:
+            old_objs.index(obj)
+        except ValueError:
+            obj_list.fk_list.append(obj.id)
+    
+    obj_list.save()
+

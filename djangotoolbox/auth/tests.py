@@ -6,7 +6,7 @@ from django.test import TestCase
 from djangotoolbox.auth.models import UserPermissionList, \
      GroupPermissionList, GroupList
 from djangotoolbox.auth.utils import add_permission_to_user, \
-     add_user_to_group, add_permission_to_group, update_permissions_user
+     add_user_to_group, add_permission_to_group, update_permissions_user, update_user_groups
 
 
 class BackendTest(TestCase):
@@ -65,14 +65,14 @@ class BackendTest(TestCase):
         self.assertEqual(user.has_perm('auth.test1'), False)
         self.assertEqual(user.has_perm('auth.test2'), False)
         
-    """
+ 
     def test_add_user_to_group(self):
         user = User.objects.get(username='test')
         group = Group.objects.create(name='test_group')
-        add_user_to_group(user, group)
+        update_user_groups(user, [group])
         self.assertEqual(GroupList.objects.count(), 1)
         self.assertNotEqual(GroupList.objects.all()[0] , None)
-
+    """
     def test_add_permission_to_group(self):
         content_type = ContentType.objects.get_for_model(Group)
         perm = Permission.objects.create(name='test',
