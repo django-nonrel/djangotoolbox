@@ -1,19 +1,22 @@
 from djangotoolbox.auth.models import UserPermissionList, GroupPermissionList, GroupList
 
-def add_to(obj, list_cls, filter):
-    obj_list, created = list_cls.objects.get_or_create(**filter)
 
-    obj_list.fk_list.append(obj.id)
+def add_perm_to(obj, list_cls, filter):
+    obj_list, created = list_cls.objects.get_or_create(**filter)
+    obj_list.permission_list.append('%s.%s' % (obj.content_type.app_label, obj.codename))
     obj_list.save()
 
 def add_permission_to_user(perm, user):
-    add_to(perm, UserPermissionList,  {'user': user }) 
+    add_perm_to(perm, UserPermissionList,  {'user': user }) 
 
 def add_user_to_group(user, group):
-    add_to(group, GroupList, {'user': user})
+    obj_list, created = GroupList.objects.get_or_create(user=user)
+
+    obj_list.fk_list.append(group.id)
+    obj_list.save()
         
 def add_permission_to_group(perm, group):
-    add_to(perm, GroupPermissionList, {'group': group})
+    add_perm_to(perm, GroupPermissionList, {'group': group})
 
 def update_list(perm_objs, list_cls, filter):
     list_obj, created = list_cls.objects.get_or_create(**filter)

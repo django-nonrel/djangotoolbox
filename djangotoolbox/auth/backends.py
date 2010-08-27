@@ -17,22 +17,20 @@ class NonrelPermissionBackend(ModelBackend):
         groups.
         """
         if not hasattr(user_obj, '_group_perm_cache'):
-            perm_objs = set([])
+            perms = set([])
             try:
                 gl = GroupList.objects.get(user=user_obj)
                 group_ids = gl.fk_list
                 if len(group_ids) > 0:
                     group_permissions = set()
-                    for group_id in group_ids:
-                        group_permissions.update(GroupPermissionList.objects.filter(group__id=group_id))
-                    for group_perm in group_permissions:
-                        perm_objs.update(group_perm.permissions)
+                    group_permissions.update(GroupPermissionList.objects.filter(group__id__in=gl.fk_list))
+                for group_perm in group_permissions:
+                    perms.update(group_perm.permission_list)
                     
             except GroupList.DoesNotExist:
                 pass
             
-            perms = list([[perm.content_type.app_label, perm.codename] for perm in perm_objs])
-            user_obj._group_perm_cache = set(["%s.%s" % (ct, name) for ct, name in perms])
+            user_obj._group_perm_cache = perms
         return user_obj._group_perm_cache
 
     def get_all_permissions(self, user_obj):
@@ -45,7 +43,7 @@ class NonrelPermissionBackend(ModelBackend):
             except UserPermissionList.DoesNotExist:
                 user_obj._perm_cache = set()
                 pass
-            #user_obj._perm_cache.update(self.get_group_permissions(user_obj))
+            user_obj._perm_cache.update(self.get_group_permissions(user_obj))
         return user_obj._perm_cache
 
     def has_perm(self, user_obj, perm):

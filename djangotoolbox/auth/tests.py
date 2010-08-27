@@ -6,7 +6,7 @@ from django.test import TestCase
 from djangotoolbox.auth.models import UserPermissionList, \
      GroupPermissionList, GroupList
 from djangotoolbox.auth.utils import add_permission_to_user, \
-     add_user_to_group, add_permission_to_group, update_permissions_user, update_user_groups
+     add_user_to_group, add_permission_to_group, update_permissions_user, update_user_groups, update_permissions_group
 
 
 class BackendTest(TestCase):
@@ -72,8 +72,9 @@ class BackendTest(TestCase):
         update_user_groups(user, [group])
         self.assertEqual(GroupList.objects.count(), 1)
         self.assertNotEqual(GroupList.objects.all()[0] , None)
-    """
-    def test_add_permission_to_group(self):
+        
+    
+    def test_update_permissions_group(self):
         content_type = ContentType.objects.get_for_model(Group)
         perm = Permission.objects.create(name='test',
                                          content_type=content_type,
@@ -83,13 +84,14 @@ class BackendTest(TestCase):
         user = User.objects.get(username='test')
         group = Group.objects.create(name='test_group')
         add_user_to_group(user, group)
-        add_permission_to_group(perm, group)
+        update_permissions_group([perm], group)
         self.assertEqual(GroupPermissionList.objects.count(), 1)
         gl = GroupPermissionList.objects.all()[0]
-        self.assertEqual(gl.permissions , set([perm]))
+        self.assertEqual(gl.permission_list , ['%s.%s'%(perm.content_type.app_label, perm.codename)])
         self.assertEqual(user.has_perm('auth.test'), True)
         self.assertEqual(user.has_perm('auth.test2312'), False)
         
+    
     def test_has_perm(self):
         user = User.objects.get(username='test')
         self.assertEqual(user.has_perm('auth.test'), False)
@@ -179,11 +181,10 @@ class BackendTest(TestCase):
         user = AnonymousUser()
         self.assertEqual(user.has_perm('test'), False)
         self.assertEqual(user.has_perms(['auth.test2', 'auth.test3']), False)
-    """
-    """
+    
     def test_has_no_object_perm(self):
-    """ """Regressiontest for #12462"""
-    """
+        """Regressiontest for #12462"""
+    
         user = User.objects.get(username='test')
         content_type = ContentType.objects.get_for_model(Group)
         content_type.save()
@@ -206,4 +207,3 @@ class BackendTest(TestCase):
         self.assertEquals(authenticate(username='test', password='test'), user)
         self.assertEquals(authenticate(username='test', password='testNones'),
                           None)
-    """

@@ -18,7 +18,7 @@ class UserPermissionList(models.Model):
 
 class GroupPermissionList(models.Model):
     group = models.ForeignKey(Group)
-    fk_list = ListField(models.ForeignKey(Permission))
+    permission_list = ListField(models.CharField(max_length=128))
 
 
 class GroupList(models.Model):
