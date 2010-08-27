@@ -23,22 +23,26 @@ def update_list(perm_objs, list_cls, filter):
 
     old_perms = list_obj.permission_list
 
-    perm_strs = ['%s.%s' % (perm.content_type.app_label, perm.codename) for perm in perm_objs]
+    perm_strs = [['%s.%s' % (perm.content_type.app_label, perm.codename), perm.id] for perm in perm_objs]
 
     for perm in old_perms:
         try: 
             perm_strs.index(perm)
         except ValueError:
-            list_obj.permission_list.remove(perm)
+            i = list_obj.permission_list.index(perm)
+            list_obj.permission_list.pop(i)
+            list_obj.fk_list.pop(i)
 
     for perm in perm_strs:
         try:
-            old_perms.index(perm)
+            old_perms.index(perm[0])
         except ValueError:
-            list_obj.permission_list.append(perm)
-
+            list_obj.permission_list.append(perm[0])
+            list_obj.fk_list.append(perm[1])
+            
     if len(perm_strs) == 0:
         list_obj.permission_list = []
+        list_obj.fk_list = []
         
     list_obj.save()
     

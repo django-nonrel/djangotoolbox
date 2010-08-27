@@ -24,8 +24,8 @@ class NonrelPermissionBackend(ModelBackend):
                 if len(group_ids) > 0:
                     group_permissions = set()
                     group_permissions.update(GroupPermissionList.objects.filter(group__id__in=gl.fk_list))
-                for group_perm in group_permissions:
-                    perms.update(group_perm.permission_list)
+                    for group_perm in group_permissions:
+                        perms.update(group_perm.permission_list)
                     
             except GroupList.DoesNotExist:
                 pass

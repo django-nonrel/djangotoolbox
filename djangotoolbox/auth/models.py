@@ -14,11 +14,12 @@ def get_objs(obj_cls, obj_ids):
 class UserPermissionList(models.Model):
     user = models.ForeignKey(User)
     permission_list = ListField(models.CharField(max_length=128))
-
+    fk_list = ListField(models.PositiveIntegerField())
 
 class GroupPermissionList(models.Model):
     group = models.ForeignKey(Group)
     permission_list = ListField(models.CharField(max_length=128))
+    fk_list = ListField(models.PositiveIntegerField())
 
 
 class GroupList(models.Model):
