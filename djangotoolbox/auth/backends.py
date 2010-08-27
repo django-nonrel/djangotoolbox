@@ -10,29 +10,26 @@ class NonrelPermissionBackend(ModelBackend):
     """
     supports_object_permissions = False
     supports_anonymous_user = True
-
-    def get_group_permissions(self, user_obj):
+    
+    def get_group_permissions(self, user_obj, user_perm_obj=None):
         """
         Returns a set of permission strings that this user has through his/her
         groups.
         """
         if not hasattr(user_obj, '_group_perm_cache'):
             perms = set([])
-            try:
-                gl = GroupList.objects.get(user=user_obj)
-                group_ids = gl.fk_list
-                if len(group_ids) > 0:
-                    group_permissions = set()
-                    group_permissions.update(GroupPermissionList.objects.filter(group__id__in=gl.fk_list))
-                    for group_perm in group_permissions:
-                        perms.update(group_perm.permission_list)
-                    
-            except GroupList.DoesNotExist:
-                pass
-            
+            if user_perm_obj is None:
+                try:
+                    pl = UserPermissionList.objects.get(user=user_obj)
+                    perms = pl.group_permission_list
+                except UserPermissionList.DoesNotExist:
+                    pass
+            else:
+                perms = user_perm_obj.group_permission_list
+
             user_obj._group_perm_cache = perms
         return user_obj._group_perm_cache
-
+    
     def get_all_permissions(self, user_obj):
         if user_obj.is_anonymous():
             return set()
@@ -40,10 +37,12 @@ class NonrelPermissionBackend(ModelBackend):
             try:
                 pl = UserPermissionList.objects.get(user=user_obj)
                 user_obj._perm_cache = set(pl.permission_list)
+                
             except UserPermissionList.DoesNotExist:
+                pl = None
                 user_obj._perm_cache = set()
-                pass
-            user_obj._perm_cache.update(self.get_group_permissions(user_obj))
+                
+            user_obj._perm_cache.update(self.get_group_permissions(user_obj, pl))
         return user_obj._perm_cache
 
     def has_perm(self, user_obj, perm):

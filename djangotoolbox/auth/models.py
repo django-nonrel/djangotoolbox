@@ -14,6 +14,7 @@ def get_objs(obj_cls, obj_ids):
 class UserPermissionList(models.Model):
     user = models.ForeignKey(User)
     permission_list = ListField(models.CharField(max_length=128))
+    group_permission_list = ListField(models.CharField(max_length=128))
     fk_list = ListField(models.PositiveIntegerField())
 
 class GroupPermissionList(models.Model):
@@ -28,7 +29,7 @@ class GroupList(models.Model):
     """
     user = models.ForeignKey(User)
     fk_list = ListField(models.ForeignKey(Group))
-
+    
     def __unicode__(self):
         return u'%s' %(self.user.username)
     

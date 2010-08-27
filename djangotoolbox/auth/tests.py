@@ -54,6 +54,15 @@ class BackendTest(TestCase):
         self.assertEqual(user.has_perm('auth.test2'), True)
         self.assertEqual(user.has_perm('auth.test'), True)
         self.assertEqual(user.has_perm('auth.test23x'), False)
+
+
+        user = User.objects.get(username='test')
+        pl = UserPermissionList.objects.all()[0]
+        update_permissions_user([perm], user)
+        self.assertEqual(user.has_perm('auth.test1'), False)
+        self.assertEqual(user.has_perm('auth.test2'), False)
+        self.assertEqual(user.has_perm('auth.test'), True)
+        self.assertEqual(user.has_perm('auth.test23x'), False)
         
         # remove all permissions
         user = User.objects.get(username='test')
@@ -91,7 +100,28 @@ class BackendTest(TestCase):
         self.assertEqual(user.has_perm('auth.test'), True)
         self.assertEqual(user.has_perm('auth.test2312'), False)
         
-    
+        group1= Group.objects.create(name='test_group1')
+        perm1 = Permission.objects.create(name='test1',
+                                         content_type=content_type,
+                                         codename='test1')
+
+        add_user_to_group(user, group1)
+        update_permissions_group([perm1], group1)
+        user = User.objects.get(username='test')
+        self.assertEqual(user.has_perm('auth.test'), True)
+        self.assertEqual(user.has_perm('auth.test1'), True)
+
+        update_permissions_group([], group1)
+        group_list = GroupList.objects.filter(fk_list=group1.id)
+        user = User.objects.get(username='test')
+        self.assertEqual(user.has_perm('auth.test'), True)
+        self.assertEqual(user.has_perm('auth.test1'), False)
+
+        update_user_groups(user, [])
+        user = User.objects.get(username='test')
+        self.assertEqual(user.has_perm('auth.test'), False)
+        self.assertEqual(user.has_perm('auth.test1'), False)
+        
     def test_has_perm(self):
         user = User.objects.get(username='test')
         self.assertEqual(user.has_perm('auth.test'), False)
