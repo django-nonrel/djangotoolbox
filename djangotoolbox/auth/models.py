@@ -1,13 +1,11 @@
+from django.contrib.auth.models import User, Group
 from django.db import models
-from django.contrib.auth.models import User, Group, Permission
-
 from djangotoolbox.fields import ListField
 
 
 def get_objs(obj_cls, obj_ids):
     objs = set()
     if len(obj_ids) > 0:
-        # order_by() has to be used to override invalid default Permission filter
         objs.update(obj_cls .objects.filter(id__in=obj_ids).order_by('name'))
     return objs
 

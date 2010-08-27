@@ -1,7 +1,6 @@
 from django.contrib.auth.backends import ModelBackend
 from django.contrib.auth.models import User
-
-from djangotoolbox.auth.models import UserPermissionList, GroupPermissionList, GroupList
+from djangotoolbox.auth.models import UserPermissionList
 
 
 class NonrelPermissionBackend(ModelBackend):
@@ -42,7 +41,8 @@ class NonrelPermissionBackend(ModelBackend):
                 pl = None
                 user_obj._perm_cache = set()
                 
-            user_obj._perm_cache.update(self.get_group_permissions(user_obj, pl))
+            user_obj._perm_cache.update(self.get_group_permissions(user_obj,
+                                                                   pl))
         return user_obj._perm_cache
 
     def has_perm(self, user_obj, perm):

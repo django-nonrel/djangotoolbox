@@ -2,7 +2,6 @@ from django.contrib.auth import authenticate
 from django.contrib.auth.models import User, Group, Permission, AnonymousUser
 from django.contrib.contenttypes.models import ContentType
 from django.test import TestCase
-
 from djangotoolbox.auth.models import UserPermissionList, \
      GroupPermissionList, GroupList
 from djangotoolbox.auth.utils import add_permission_to_user, \
@@ -117,7 +116,7 @@ class BackendTest(TestCase):
         self.assertEqual(user.has_perm('auth.test'), True)
         self.assertEqual(user.has_perm('auth.test1'), False)
 
-        update_user_groups(user, [])
+        update_user_groups(user, [group1])
         user = User.objects.get(username='test')
         self.assertEqual(user.has_perm('auth.test'), False)
         self.assertEqual(user.has_perm('auth.test1'), False)
