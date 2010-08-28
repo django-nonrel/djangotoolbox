@@ -1,6 +1,6 @@
 from django.contrib.auth.backends import ModelBackend
 from django.contrib.auth.models import User
-from djangotoolbox.auth.models import UserPermissionList
+from djangotoolbox.auth.models import UserPermissionList, GroupPermissionList
 
 
 class NonrelPermissionBackend(ModelBackend):
@@ -18,14 +18,13 @@ class NonrelPermissionBackend(ModelBackend):
         if not hasattr(user_obj, '_group_perm_cache'):
             perms = set([])
             if user_perm_obj is None:
-                try:
-                    pl = UserPermissionList.objects.get(user=user_obj)
-                    perms = pl.group_permission_list
-                except UserPermissionList.DoesNotExist:
-                    pass
-            else:
-                perms = user_perm_obj.group_permission_list
-
+                user_perm_obj, created = UserPermissionList.objects.get_or_create(user=user_obj)
+            
+            group_perm_lists = GroupPermissionList.objects.filter(group__id__in=user_perm_obj.group_fk_list)
+            
+            for group_perm_list in group_perm_lists:
+                perms.update(group_perm_list.permission_list)
+                
             user_obj._group_perm_cache = perms
         return user_obj._group_perm_cache
     

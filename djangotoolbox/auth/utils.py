@@ -1,7 +1,6 @@
 from copy import copy
 
-from djangotoolbox.auth.models import UserPermissionList, GroupPermissionList,\
-     GroupList
+from djangotoolbox.auth.models import UserPermissionList, GroupPermissionList
 
 
 def update_user_group_permissions(group_list):
@@ -10,11 +9,12 @@ def update_user_group_permissions(group_list):
     permissions of a group are modified and everytime a user joins
     or leaves a group
     """
-    
+
+    return True
     perms = set()
-    if len(group_list.fk_list) > 0:
+    if len(group_list.group_fk_list) > 0:
         group_permissions = set()
-        group_permissions.update(GroupPermissionList.objects.filter(group__id__in=group_list.fk_list))
+        group_permissions.update(GroupPermissionList.objects.filter(group__id__in=group_list.group_fk_list))
         for group_perm in group_permissions:
             perms.update(group_perm.permission_list)
         
@@ -32,15 +32,15 @@ def add_permission_to_user(perm, user):
     add_perm_to(perm, UserPermissionList,  {'user': user }) 
 
 def add_user_to_group(user, group):
-    obj_list, created = GroupList.objects.get_or_create(user=user)
-    obj_list.fk_list.append(group.id)
+    obj_list, created = UserPermissionList.objects.get_or_create(user=user)
+    obj_list.group_fk_list.append(group.id)
     obj_list.save()
     update_user_group_permissions(obj_list)
     
 def add_permission_to_group(perm, group):
     add_perm_to(perm, GroupPermissionList, {'group': group})
     
-    group_list = GroupList.objects.filter(fk_list=group.id)
+    group_list = UserPermissionList.objects.filter(group_fk_list=group.id)
     for gl in group_list:
         update_user_group_permissions(gl)
 
@@ -63,7 +63,7 @@ def update_list(perm_objs, list_cls, filter):
         except ValueError:
             i = list_obj.permission_list.index(perm)
             list_obj.permission_list.pop(i)
-            list_obj.fk_list.pop(i)
+            list_obj.permission_fk_list.pop(i)
 
     i = 0    
     for perm in perm_strs:
@@ -71,7 +71,7 @@ def update_list(perm_objs, list_cls, filter):
             old_perms.index(perm)
         except ValueError:
             list_obj.permission_list.append(perm)
-            list_obj.fk_list.append(perm_ids[i])
+            list_obj.permission_fk_list.append(perm_ids[i])
         i += 1
 
     list_obj.save()
@@ -82,27 +82,27 @@ def update_permissions_user(perms, user):
 def update_permissions_group(perms, group):
     update_list(perms, GroupPermissionList, {'group': group})
 
-    group_list = GroupList.objects.filter(fk_list=group.id)
+    group_list = UserPermissionList.objects.filter(group_fk_list=group.id)
     for gl in group_list:
         update_user_group_permissions(gl)
 
 def update_user_groups(user, groups):
-    objs = groups
-    obj_list, created = GroupList.objects.get_or_create(user=user)
-    old_objs = list(obj_list._get_objs())
+    new_group_ids = [ group.id for group in groups]
+    pl, created = UserPermissionList.objects.get_or_create(user=user)
+    old_group_ids = copy(pl.group_fk_list)
     
-    for obj in old_objs:
+    for group_id in old_group_ids:
         try:
-            objs.index(obj)
+            new_group_ids.index(group_id)
         except ValueError:
-            obj_list.fk_list.remove(obj.id)
+            pl.group_fk_list.remove(group_id)
     
-    for obj in objs:
+    for group_id in new_group_ids:
         try:
-            old_objs.index(obj)
+            old_group_ids.index(group_id)
         except ValueError:
-            obj_list.fk_list.append(obj.id)
+            pl.group_fk_list.append(group_id)
     
-    obj_list.save()
+    pl.save()
     
-    update_user_group_permissions(obj_list)
+    update_user_group_permissions(pl)
