@@ -1,7 +1,6 @@
 from django.contrib.auth.backends import ModelBackend
 from django.contrib.auth.models import User
-
-from djangotoolbox.auth.models import UserPermissionList, GroupPermissionList, GroupList
+from djangotoolbox.auth.models import UserPermissionList, GroupPermissionList
 
 
 class NonrelPermissionBackend(ModelBackend):
@@ -10,42 +9,39 @@ class NonrelPermissionBackend(ModelBackend):
     """
     supports_object_permissions = False
     supports_anonymous_user = True
-
-    def get_group_permissions(self, user_obj):
+    
+    def get_group_permissions(self, user_obj, user_perm_obj=None):
         """
         Returns a set of permission strings that this user has through his/her
         groups.
         """
         if not hasattr(user_obj, '_group_perm_cache'):
-            perm_objs = set([])
-            try:
-                gl = GroupList.objects.get(user=user_obj)
-                group_ids = gl.fk_list
-                if len(group_ids) > 0:
-                    group_permissions = set()
-                    for group_id in group_ids:
-                        group_permissions.update(GroupPermissionList.objects.filter(group__id=group_id))
-                    for group_perm in group_permissions:
-                        perm_objs.update(group_perm.permissions)
-                    
-            except GroupList.DoesNotExist:
-                pass
+            perms = set([])
+            if user_perm_obj is None:
+                user_perm_obj, created = UserPermissionList.objects.get_or_create(user=user_obj)
             
-            perms = list([[perm.content_type.app_label, perm.codename] for perm in perm_objs])
-            user_obj._group_perm_cache = set(["%s.%s" % (ct, name) for ct, name in perms])
+            group_perm_lists = GroupPermissionList.objects.filter(group__id__in=user_perm_obj.group_fk_list)
+            
+            for group_perm_list in group_perm_lists:
+                perms.update(group_perm_list.permission_list)
+                
+            user_obj._group_perm_cache = perms
         return user_obj._group_perm_cache
-
+    
     def get_all_permissions(self, user_obj):
         if user_obj.is_anonymous():
             return set()
         if not hasattr(user_obj, '_perm_cache'):
             try:
                 pl = UserPermissionList.objects.get(user=user_obj)
-                user_obj._perm_cache = set([u"%s.%s" % (p.content_type.app_label, p.codename) for p in pl.permissions])
+                user_obj._perm_cache = set(pl.permission_list)
+                
             except UserPermissionList.DoesNotExist:
+                pl = None
                 user_obj._perm_cache = set()
-                pass
-            user_obj._perm_cache.update(self.get_group_permissions(user_obj))
+                
+            user_obj._perm_cache.update(self.get_group_permissions(user_obj,
+                                                                   pl))
         return user_obj._perm_cache
 
     def has_perm(self, user_obj, perm):

@@ -112,7 +112,6 @@ class FilterTest(TestCase):
                           ListModel.objects.filter(floating_point=9.1).filter(
                             names__startswith='Sa')], [['Kakashi', 'Naruto',
                             'Sasuke',],])
-
 # passes on production but not on sdk
 #    def test_Q_objects(self):
 #        self.assertEquals([entity.names for entity in
