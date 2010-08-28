@@ -3,25 +3,6 @@ from copy import copy
 from djangotoolbox.auth.models import UserPermissionList, GroupPermissionList
 
 
-def update_user_group_permissions(group_list):
-    """
-    updates UserPermissionList.group_permission_list everytime
-    permissions of a group are modified and everytime a user joins
-    or leaves a group
-    """
-
-    return True
-    perms = set()
-    if len(group_list.group_fk_list) > 0:
-        group_permissions = set()
-        group_permissions.update(GroupPermissionList.objects.filter(group__id__in=group_list.group_fk_list))
-        for group_perm in group_permissions:
-            perms.update(group_perm.permission_list)
-        
-    user_perm, created = UserPermissionList.objects.get_or_create(user=group_list.user)
-    user_perm.group_permission_list = list(perms)
-    user_perm.save()
-
 def add_perm_to(obj, list_cls, filter):
     obj_list, created = list_cls.objects.get_or_create(**filter)
     obj_list.permission_list.append('%s.%s' % (obj.content_type.app_label,\
@@ -35,14 +16,9 @@ def add_user_to_group(user, group):
     obj_list, created = UserPermissionList.objects.get_or_create(user=user)
     obj_list.group_fk_list.append(group.id)
     obj_list.save()
-    update_user_group_permissions(obj_list)
     
 def add_permission_to_group(perm, group):
     add_perm_to(perm, GroupPermissionList, {'group': group})
-    
-    group_list = UserPermissionList.objects.filter(group_fk_list=group.id)
-    for gl in group_list:
-        update_user_group_permissions(gl)
 
 def update_list(perm_objs, list_cls, filter):
     """
@@ -82,10 +58,6 @@ def update_permissions_user(perms, user):
 def update_permissions_group(perms, group):
     update_list(perms, GroupPermissionList, {'group': group})
 
-    group_list = UserPermissionList.objects.filter(group_fk_list=group.id)
-    for gl in group_list:
-        update_user_group_permissions(gl)
-
 def update_user_groups(user, groups):
     new_group_ids = [ group.id for group in groups]
     pl, created = UserPermissionList.objects.get_or_create(user=user)
@@ -104,5 +76,3 @@ def update_user_groups(user, groups):
             pl.group_fk_list.append(group_id)
     
     pl.save()
-    
-    update_user_group_permissions(pl)

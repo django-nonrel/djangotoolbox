@@ -16,7 +16,6 @@ class UserPermissionList(models.Model):
     permission_list = ListField(models.CharField(max_length=128))
     permission_fk_list = ListField(models.CharField(max_length=32))
 
-    group_permission_list = ListField(models.CharField(max_length=128))
     group_fk_list = ListField(models.CharField(max_length=32))
 
     def _get_objs(self):
