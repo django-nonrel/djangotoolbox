@@ -219,16 +219,6 @@ class NonrelCompiler(SQLCompiler):
         for entity in self.build_query(fields).fetch(low_mark, high_mark):
             yield self._make_result(entity, fields)
 
-    def _make_result(self, entity, fields):
-        result = []
-        for field in fields:
-            if not field.null and entity.get(field.column,
-                    field.get_default()) is None:
-                raise DatabaseError("Non-nullable field %s can't be None!" % field.name)
-            result.append(self.convert_value_from_db(field.db_type(
-                connection=self.connection), entity.get(field.column, field.get_default())))
-        return result
-
     def has_results(self):
         return self.get_count(check_exists=True)
 
@@ -254,6 +244,16 @@ class NonrelCompiler(SQLCompiler):
     # ----------------------------------------------
     # Additional NonrelCompiler API
     # ----------------------------------------------
+    def _make_result(self, entity, fields):
+        result = []
+        for field in fields:
+            if not field.null and entity.get(field.column,
+                    field.get_default()) is None:
+                raise DatabaseError("Non-nullable field %s can't be None!" % field.name)
+            result.append(self.convert_value_from_db(field.db_type(
+                connection=self.connection), entity.get(field.column, field.get_default())))
+        return result
+
     def check_query(self):
         if (len([a for a in self.query.alias_map if self.query.alias_refcount[a]]) > 1
                 or self.query.distinct or self.query.extra or self.query.having):

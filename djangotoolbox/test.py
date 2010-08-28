@@ -52,8 +52,11 @@ class CapturingTestRunner(DjangoTestRunner):
         stderr = sys.stderr
 
         def extend_error(errors):
-            captured_stdout = sys.stdout.getvalue()
-            captured_stderr = sys.stderr.getvalue()
+            try:
+                captured_stdout = sys.stdout.getvalue()
+                captured_stderr = sys.stderr.getvalue()
+            except AttributeError:
+                captured_stdout = captured_stderr = ''
             sys.stdout = stdout
             sys.stderr = stderr
             t, e = errors[-1]
