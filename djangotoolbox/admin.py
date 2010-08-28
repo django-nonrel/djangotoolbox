@@ -1,5 +1,4 @@
-from .auth.models import UserPermissionList, GroupList, \
-     GroupPermissionList
+from .auth.models import UserPermissionList, GroupPermissionList
 from .auth.utils import update_permissions_user, \
      update_user_groups, update_permissions_group
 from django import forms
@@ -39,16 +38,12 @@ class NonrelPermissionUserForm(UserForm):
         try:
             user_perm_list = UserPermissionList.objects.get(
                 user=kwargs['instance'])
-            self.fields['user_permissions'].initial = user_perm_list.fk_list
+            self.fields['user_permissions'].initial = user_perm_list.permission_fk_list
+            self.fields['groups'].initial = user_perm_list.group_fk_list
         except (UserPermissionList.DoesNotExist, KeyError):
             self.fields['user_permissions'].initial = list()
-            
-        try:
-            user_group_list = GroupList.objects.get(
-                user=kwargs['instance'])
-            self.fields['groups'].initial = user_group_list.fk_list
-        except (GroupList.DoesNotExist, KeyError):
-            self.fields['groups'].initial = list()
+            self.fields['groups'].initial = list()          
+      
 
 
 class CustomUserAdmin(UserAdmin):
