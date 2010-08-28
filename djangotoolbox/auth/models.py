@@ -13,12 +13,12 @@ class UserPermissionList(models.Model):
     user = models.ForeignKey(User)
     permission_list = ListField(models.CharField(max_length=128))
     group_permission_list = ListField(models.CharField(max_length=128))
-    fk_list = ListField(models.PositiveIntegerField())
-
+    fk_list = ListField(models.CharField(max_length=32))
+    
 class GroupPermissionList(models.Model):
     group = models.ForeignKey(Group)
     permission_list = ListField(models.CharField(max_length=128))
-    fk_list = ListField(models.PositiveIntegerField())
+    fk_list = ListField(models.CharField(max_length=32))
 
 
 class GroupList(models.Model):
@@ -26,6 +26,7 @@ class GroupList(models.Model):
     GroupLists are used to map a list of groups to a user
     """
     user = models.ForeignKey(User)
+    #fk_list = ListField(models.CharField(max_length=32))
     fk_list = ListField(models.ForeignKey(Group))
     
     def __unicode__(self):
