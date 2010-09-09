@@ -5,12 +5,15 @@ from django.db.models import Q
 #from django.db.utils import DatabaseError
 from django.test import TestCase
 
-
 class ListModel(models.Model):
     floating_point = models.FloatField()
     names = ListField(models.CharField(max_length=500))
     names_with_default = ListField(models.CharField(max_length=500), default=[])
     names_nullable = ListField(models.CharField(max_length=500), null=True)
+
+class FKModel(models.Model):
+    fk = models.ForeignKey(ListModel, null=True, blank=True)
+    fk2 = models.ForeignKey('self', null=True, blank=True)
 
 class FilterTest(TestCase):
     floats = [5.3, 2.6, 9.1, 1.58]
@@ -19,6 +22,17 @@ class FilterTest(TestCase):
     def setUp(self):
         for i, float in enumerate(FilterTest.floats):
             ListModel(floating_point=float, names=FilterTest.names[:i+1]).save()
+
+    def test_fk_null_rewrite(self):
+        # Django doesn't generate correct code for ForeignKey__isnull.
+        # It becomes a JOIN with pk__isnull which won't work on nonrel DBs,
+        # so we rewrite the JOIN in the base backend classes.
+        FKModel().save()
+        FKModel(fk=ListModel.objects.all()[0]).save()
+        self.assertEqual(len(FKModel.objects.filter(fk=None)), 1)
+        self.assertEqual(len(FKModel.objects.filter(fk2=None)), 2)
+        self.assertEqual(len(FKModel.objects.exclude(fk=None)), 1)
+        self.assertEqual(len(FKModel.objects.exclude(fk2=None)), 0)
 
     def test_equals_empty(self):
         self.assertEqual(ListModel.objects.filter(names=[]).count(), 0)
