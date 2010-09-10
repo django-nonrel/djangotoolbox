@@ -1,5 +1,4 @@
 from django.conf import settings
-from django.db import models
 from django.db.models.sql import aggregates as sqlaggregates
 from django.db.models.sql.compiler import SQLCompiler
 from django.db.models.sql.constants import LOOKUP_SEP, MULTI, SINGLE

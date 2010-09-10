@@ -1,8 +1,5 @@
 from .fields import ListField
-from django.conf import settings
 from django.db import models
-from django.db.models import Q
-#from django.db.utils import DatabaseError
 from django.test import TestCase
 
 class ListModel(models.Model):
