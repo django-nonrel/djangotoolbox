@@ -124,11 +124,10 @@ class NonrelQuery(object):
         # not necessary with emulated negation handling code
         result = []
         for child in children:
-            if isinstance(child, Node) and child.negated and \
-                    len(child.children) == 1 and \
-                    isinstance(child.children[0], tuple):
-                node, lookup_type, annotation, value = child.children[0]
-                if lookup_type == 'isnull' and value == True and node.field is None:
+            if isinstance(child, tuple):
+                constraint = child[0]
+                lookup_type = child[1]
+                if lookup_type == 'isnull' and constraint.field is None:
                     continue
             result.append(child)
         return result
