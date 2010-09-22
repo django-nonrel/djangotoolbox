@@ -66,6 +66,8 @@ class CapturingTestRunner(DjangoTestRunner):
             if captured_stderr:
                 e += '\n--------------- Captured stderr: ---------------\n'
                 e += captured_stderr
+            if captured_stdout or captured_stderr:
+                e += '\n--------------- End captured output ---------------\n\n'
             errors[-1] = (t, e)
 
         def override(func):
