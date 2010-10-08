@@ -3,6 +3,7 @@ from .test import skip_if
 from django.db import models, connections
 from django.db.models import Q
 from django.test import TestCase
+from django.db.utils import DatabaseError
 
 class ListModel(models.Model):
     floating_point = models.FloatField()
@@ -134,3 +135,29 @@ class FilterTest(TestCase):
         self.assertEquals([entity.names for entity in
             ListModel.objects.exclude(Q(names__lt='Sakura') | Q(names__gte='Sasuke'))],
                 [['Kakashi', 'Naruto', 'Sasuke', 'Sakura'], ])
+
+class BaseModel(models.Model):
+    pass
+
+class ExtendedModel(BaseModel):
+    name = models.CharField(max_length=20)
+
+class BaseModelProxy(BaseModel):
+    class Meta:
+        proxy = True
+
+class ExtendedModelProxy(ExtendedModel):
+    class Meta:
+        proxy = True
+
+class ProxyTest(TestCase):
+    def test_proxy(self):
+        list(BaseModelProxy.objects.all())
+
+    def test_proxy_with_inheritance(self):
+        try:
+            list(ExtendedModelProxy.objects.all())
+        except DatabaseError:
+            pass
+        else:
+            self.fail()

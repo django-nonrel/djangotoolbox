@@ -298,8 +298,13 @@ class NonrelCompiler(SQLCompiler):
             db_table = self.query.model._meta.db_table
             fields = [f for f in fields if db_table in only_load and
                       f.column in only_load[db_table]]
+
+        query_model = self.query.model
+        if query_model._meta.proxy:
+            query_model = query_model._meta.proxy_for_model
+
         for field in fields:
-            if field.model._meta != self.query.model._meta:
+            if field.model._meta != query_model._meta:
                 raise DatabaseError('Multi-table inheritance is not supported '
                                     'by non-relational DBs.')
         return fields
