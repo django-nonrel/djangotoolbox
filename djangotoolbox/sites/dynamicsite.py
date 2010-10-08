@@ -7,7 +7,7 @@ _default_site_id = getattr(settings, 'SITE_ID', None)
 SITE_ID = settings.__class__.SITE_ID = make_tls_property()
 
 class DynamicSiteIDMiddleware(object):
-    """Sets settings.SIDE_ID based on request's domain"""
+    """Sets settings.SITE_ID based on request's domain"""
     def process_request(self, request):
         # Ignore port if it's 80 or 443
         if ':' in request.get_host():
