@@ -1,5 +1,7 @@
-from .fields import ListField
-from django.db import models
+from .fields import ListField, SetField, DictField
+from .test import skip_if
+from django.db import models, connections
+from django.db.models import Q
 from django.test import TestCase
 
 class ListModel(models.Model):
@@ -7,6 +9,14 @@ class ListModel(models.Model):
     names = ListField(models.CharField(max_length=500))
     names_with_default = ListField(models.CharField(max_length=500), default=[])
     names_nullable = ListField(models.CharField(max_length=500), null=True)
+
+class SetModel(models.Model):
+    setfield = SetField(models.IntegerField())
+
+supports_dicts = getattr(connections['default'].features, 'supports_dicts', False)
+if supports_dicts:
+    class DictModel(models.Model):
+        dictfield = DictField(models.IntegerField())
 
 class FilterTest(TestCase):
     floats = [5.3, 2.6, 9.1, 1.58]
@@ -105,8 +115,22 @@ class FilterTest(TestCase):
                           ListModel.objects.filter(floating_point=9.1).filter(
                             names__startswith='Sa')], [['Kakashi', 'Naruto',
                             'Sasuke',],])
-# passes on production but not on sdk
-#    def test_Q_objects(self):
-#        self.assertEquals([entity.names for entity in
-#            ListModel.objects.exclude(Q(names__lt='Sakura') | Q(names__gte='Sasuke'))],
-#                [['Kakashi', 'Naruto', 'Sasuke', 'Sakura'], ])
+
+    def test_setfield(self):
+        setdata = [1, 2, 3, 2, 1]
+        SetModel(setfield=setdata).save()
+        item = SetModel.objects.filter(setfield=3)[0]
+        self.assertEqual(item.setfield, set(setdata))
+
+    @skip_if(not supports_dicts)
+    def test_dictfield(self):
+        DictModel(dictfield=dict(a=1, b='55', foo=3.14)).save()
+        item = DictModel.objects.get()
+        self.assertEqual(item.dictfield, {u'a' : 1, u'b' : 55, u'foo' : 3})
+
+    # passes on GAE production but not on sdk
+    @skip_if(True)
+    def test_Q_objects(self):
+        self.assertEquals([entity.names for entity in
+            ListModel.objects.exclude(Q(names__lt='Sakura') | Q(names__gte='Sasuke'))],
+                [['Kakashi', 'Naruto', 'Sasuke', 'Sakura'], ])
