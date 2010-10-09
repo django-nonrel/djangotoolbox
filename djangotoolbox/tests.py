@@ -10,6 +10,10 @@ class ListModel(models.Model):
     names_with_default = ListField(models.CharField(max_length=500), default=[])
     names_nullable = ListField(models.CharField(max_length=500), null=True)
 
+class OrderedListModel(models.Model):
+    ordered_ints = ListField(models.IntegerField(max_length=500), default=[],
+                             ordering=lambda x: x)
+
 class SetModel(models.Model):
     setfield = SetField(models.IntegerField())
 
@@ -21,6 +25,7 @@ if supports_dicts:
 class FilterTest(TestCase):
     floats = [5.3, 2.6, 9.1, 1.58]
     names = [u'Kakashi', u'Naruto', u'Sasuke', u'Sakura',]
+    unordered_ints = [4, 2, 6, 1]
 
     def setUp(self):
         for i, float in enumerate(FilterTest.floats):
@@ -36,14 +41,23 @@ class FilterTest(TestCase):
                             ['Kakashi', 'Naruto', 'Sasuke', 'Sakura',]])
 
     def test_options(self):
-        self.assertEquals([entity.names_with_default for entity in
+        self.assertEqual([entity.names_with_default for entity in
                            ListModel.objects.filter(names__startswith='Sa')],
                           [[], []])
 
-        # TODO: should it be NULL or None here?
-        self.assertEquals([entity.names_nullable for entity in
+        self.assertEqual([entity.names_nullable for entity in
                            ListModel.objects.filter(names__startswith='Sa')],
                           [None, None])
+
+    def test_default_value(self):
+        # Make sure default value is copied
+        ListModel().names_with_default.append(2)
+        self.assertEqual(ListModel().names_with_default, [])
+
+    def test_ordering(self):
+        OrderedListModel(ordered_ints=self.unordered_ints).save()
+        self.assertEqual(OrderedListModel.objects.get().ordered_ints,
+                         sorted(self.unordered_ints))
 
     def test_gt(self):
         # test gt on list

@@ -4,7 +4,6 @@ class NonrelDatabaseCreation(BaseDatabaseCreation):
     data_types = {
         'AutoField':         'integer',
         'BigIntegerField':   'long',
-        'BlobField':         'blob',
         'BooleanField':      'bool',
         'CharField':         'text',
         'CommaSeparatedIntegerField': 'text',
@@ -28,4 +27,7 @@ class NonrelDatabaseCreation(BaseDatabaseCreation):
         'TimeField':         'time',
         'URLField':          'text',
         'XMLField':          'longtext',
+
+        'BlobField':         'blob',
+        'RawField':          'raw',
     }

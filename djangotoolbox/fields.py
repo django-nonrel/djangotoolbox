@@ -5,9 +5,10 @@ from django.core.exceptions import ValidationError
 
 __all__ = ('GenericField', 'ListField', 'DictField', 'SetField', 'BlobField')
 
-class GenericField(models.Field):
+class RawField(models.Field):
     """ Generic field to store anything your database backend allows you to. """
-    pass
+    def get_internal_type(self):
+        return 'RawField'
 
 class AbstractIterableField(models.Field):
     """
@@ -20,6 +21,8 @@ class AbstractIterableField(models.Field):
     appropriate data type.
     """
     def __init__(self, item_field=None, *args, **kwargs):
+        if item_field is None:
+            item_field = RawField()
         self.item_field = item_field
         default = kwargs.get('default', None if kwargs.get('null') else ())
         if default is not None and not callable(default):
@@ -123,15 +126,7 @@ class BlobField(models.Field):
 
     In the latter case, the object has to provide a ``read`` method from which
     the blob is read.
-
-    If the optional keyword arguments `close_files` is ``True``, the ``close``
-    method of file-like values will be called after ``read``ing the contents
-    (if such a method exists at all).
     """
-    def __init__(self, *args, **kwargs):
-        self.close_files = kwargs.pop('close_files', False)
-        super(BlobField, self).__init__(*args, **kwargs)
-
     def get_internal_type(self):
         return 'BlobField'
 
@@ -146,9 +141,7 @@ class BlobField(models.Field):
 
     def get_db_prep_value(self, value, connection, prepared=False):
         if hasattr(value, 'read'):
-            content = value.read()
-            if self.close_files and hasattr(value, 'close'):
-                value.close()
+            return value.read()
         else:
             return str(value)
 
