@@ -31,16 +31,13 @@ class AbstractIterableField(models.Field):
         super(AbstractIterableField, self).__init__(*args, **kwargs)
 
     def contribute_to_class(self, cls, name):
-        if self.item_field is not None:
-            self.item_field.model = cls
-            self.item_field.name = name
+        self.item_field.model = cls
+        self.item_field.name = name
         super(AbstractIterableField, self).contribute_to_class(cls, name)
 
     def db_type(self, connection):
-        name = self.__class__.__name__
-        if self.item_field:
-            name += ':' + self.item_field.db_type(connection=connection)
-        return name
+        item_db_type = self.item_field.db_type(connection=connection)
+        return '%s:%s' % (self.__class__.__name__, item_db_type)
 
     def _convert(self, func, values, *args, **kwargs):
         if isinstance(values, (list, tuple, set)):
