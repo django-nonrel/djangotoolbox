@@ -132,7 +132,8 @@ class FilterTest(TestCase):
 
     def test_setfield(self):
         setdata = [1, 2, 3, 2, 1]
-        SetModel(setfield=setdata).save()
+        # At the same time test value conversion
+        SetModel(setfield=map(str, setdata)).save()
         item = SetModel.objects.filter(setfield=3)[0]
         self.assertEqual(item.setfield, set(setdata))
 
