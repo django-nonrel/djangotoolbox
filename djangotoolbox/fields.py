@@ -41,8 +41,7 @@ class AbstractIterableField(models.Field):
 
     def _convert(self, func, values, *args, **kwargs):
         if isinstance(values, (list, tuple, set)):
-            values = [func(value, *args, **kwargs) for value in values]
-            values = self._type(values)
+            return self._type(func(value, *args, **kwargs) for value in values)
         return values
 
     def to_python(self, value):
@@ -60,10 +59,10 @@ class AbstractIterableField(models.Field):
         try:
             iter(values)
         except TypeError:
-            raise ValidationError(_(u'Value of type %r is not iterable' % type(values)))
+            raise ValidationError('Value of type %r is not iterable' % type(values))
 
     def formfield(self, **kwargs):
-        raise NotImplementedError("No form field implemented for %r" % type(self))
+        raise NotImplementedError('No form field implemented for %r' % type(self))
 
 class ListField(AbstractIterableField):
     """
@@ -85,7 +84,7 @@ class ListField(AbstractIterableField):
 
     def _convert(self, func, values, *args, **kwargs):
         values = super(ListField, self)._convert(func, values, *args, **kwargs)
-        if self.ordering is not None:
+        if values is not None and self.ordering is not None:
             values.sort(key=self.ordering)
         return values
 
@@ -107,12 +106,14 @@ class DictField(AbstractIterableField):
     _type = dict
 
     def _convert(self, func, values, *args, **kwargs):
-        return dict([(key, func(values[key], *args, **kwargs))
-                     for key in values])
+        if values is None:
+            return None
+        return dict((key, func(value, *args, **kwargs))
+                     for key, value in values.iteritems())
 
     def validate(self, values, model_instance):
         if not isinstance(values, dict):
-            raise ValidationError(_(u'Value is of type %r. Should be a dict.' % type(values)))
+            raise ValidationError('Value is of type %r. Should be a dict.' % type(values))
 
 class BlobField(models.Field):
     """

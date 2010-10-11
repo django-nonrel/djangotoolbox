@@ -13,7 +13,8 @@ class ListModel(models.Model):
 
 class OrderedListModel(models.Model):
     ordered_ints = ListField(models.IntegerField(max_length=500), default=[],
-                             ordering=lambda x: x)
+                             ordering=lambda x: x, null=True)
+    ordered_nullable = ListField(ordering=lambda x:x, null=True)
 
 class SetModel(models.Model):
     setfield = SetField(models.IntegerField())
@@ -22,6 +23,7 @@ supports_dicts = getattr(connections['default'].features, 'supports_dicts', Fals
 if supports_dicts:
     class DictModel(models.Model):
         dictfield = DictField(models.IntegerField())
+        dictfield_nullable = DictField(null=True)
 
 class FilterTest(TestCase):
     floats = [5.3, 2.6, 9.1, 1.58]
@@ -31,9 +33,6 @@ class FilterTest(TestCase):
     def setUp(self):
         for i, float in enumerate(FilterTest.floats):
             ListModel(floating_point=float, names=FilterTest.names[:i+1]).save()
-
-    def test_equals_empty(self):
-        self.assertEqual(ListModel.objects.filter(names=[]).count(), 0)
 
     def test_startswith(self):
         self.assertEquals([entity.names for entity in
@@ -137,12 +136,18 @@ class FilterTest(TestCase):
         SetModel(setfield=map(str, setdata)).save()
         item = SetModel.objects.filter(setfield=3)[0]
         self.assertEqual(item.setfield, set(setdata))
+        # This shouldn't raise an error because the default value is
+        # an empty list
+        SetModel().save()
 
     @skip_if(not supports_dicts)
     def test_dictfield(self):
         DictModel(dictfield=dict(a=1, b='55', foo=3.14)).save()
         item = DictModel.objects.get()
         self.assertEqual(item.dictfield, {u'a' : 1, u'b' : 55, u'foo' : 3})
+        # This shouldn't raise an error becaues the default value is
+        # an empty dict
+        DictModel().save()
 
     # passes on GAE production but not on sdk
     @skip_if(True)
@@ -170,9 +175,4 @@ class ProxyTest(TestCase):
         list(BaseModelProxy.objects.all())
 
     def test_proxy_with_inheritance(self):
-        try:
-            list(ExtendedModelProxy.objects.all())
-        except DatabaseError:
-            pass
-        else:
-            self.fail()
+        self.assertRaises(DatabaseError, lambda: list(ExtendedModelProxy.objects.all()))
