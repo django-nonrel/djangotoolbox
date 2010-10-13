@@ -22,10 +22,12 @@ CLASSIFIERS = [
 setup(name='djangotoolbox',
       packages=find_packages(exclude=('tests', 'tests.*')),
       author='Waldemar Kornewald',
+      author_email='wkornewald@gmail.com',
       url='http://www.allbuttonspressed.com/projects/djangotoolbox',
       description=DESCRIPTION,
       long_description=LONG_DESCRIPTION,
       platforms=['any'],
       classifiers=CLASSIFIERS,
       install_requires=[],
+      version='0.8',
 )
