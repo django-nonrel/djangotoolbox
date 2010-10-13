@@ -5,6 +5,21 @@ from django.core.exceptions import ValidationError
 
 __all__ = ('GenericField', 'ListField', 'DictField', 'SetField', 'BlobField')
 
+class _HandleAssignment(object):
+    """
+    A placeholder class that provides a way to set the attribute on the model.
+    """
+    def __init__(self, field):
+        self.field = field
+
+    def __get__(self, obj, type=None):
+        if obj is None:
+            raise AttributeError('Can only be accessed via an instance.')
+        return obj.__dict__[self.field.name]
+
+    def __set__(self, obj, value):
+        obj.__dict__[self.field.name] = self.field.to_python(value)
+
 class RawField(models.Field):
     """ Generic field to store anything your database backend allows you to. """
     def get_internal_type(self):
@@ -34,6 +49,10 @@ class AbstractIterableField(models.Field):
         self.item_field.model = cls
         self.item_field.name = name
         super(AbstractIterableField, self).contribute_to_class(cls, name)
+
+        metaclass = getattr(self.item_field, '__metaclass__', None)
+        if issubclass(metaclass, models.SubfieldBase):
+            setattr(cls, self.name, _HandleAssignment(self))
 
     def db_type(self, connection):
         item_db_type = self.item_field.db_type(connection=connection)
