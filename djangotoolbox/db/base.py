@@ -2,7 +2,6 @@ import datetime
 from django.db.backends import BaseDatabaseFeatures, BaseDatabaseOperations, \
     BaseDatabaseWrapper, BaseDatabaseClient, BaseDatabaseValidation, \
     BaseDatabaseIntrospection
-from django.db.models.sql.aggregates import Count
 
 from .creation import NonrelDatabaseCreation
 
@@ -43,6 +42,7 @@ class NonrelDatabaseOperations(BaseDatabaseOperations):
         return value
 
     def check_aggregate_support(self, aggregate):
+        from django.db.models.sql.aggregates import Count
         if not isinstance(aggregate, Count):
             raise NotImplementedError("This database does not support %r "
                                       "aggregates" % type(aggregate))
