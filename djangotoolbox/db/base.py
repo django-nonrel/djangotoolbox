@@ -2,6 +2,7 @@ import datetime
 from django.db.backends import BaseDatabaseFeatures, BaseDatabaseOperations, \
     BaseDatabaseWrapper, BaseDatabaseClient, BaseDatabaseValidation, \
     BaseDatabaseIntrospection
+from django.db.models.sql.aggregates import Count
 
 from .creation import NonrelDatabaseCreation
 
@@ -42,11 +43,11 @@ class NonrelDatabaseOperations(BaseDatabaseOperations):
         return value
 
     def check_aggregate_support(self, aggregate):
-        # TODO: Only COUNT(*) should be supported, by default.
-        # Raise NotImplementedError in all other cases.
-        pass
+        if not isinstance(aggregate, Count):
+            raise NotImplementedError("This database does not support %r "
+                                      "aggregates" % type(aggregate))
 
-    def year_lookup_bounds(self, value): 
+    def year_lookup_bounds(self, value):
         return [datetime.datetime(value, 1, 1, 0, 0, 0, 0),
                 datetime.datetime(value+1, 1, 1, 0, 0, 0, 0)]
 
