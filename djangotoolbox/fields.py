@@ -3,7 +3,7 @@
 from django.db import models
 from django.core.exceptions import ValidationError
 
-__all__ = ('GenericField', 'ListField', 'DictField', 'SetField', 'BlobField')
+__all__ = ('RawField', 'ListField', 'DictField', 'SetField', 'BlobField')
 
 class _HandleAssignment(object):
     """
