@@ -11,12 +11,12 @@ except:
 CLASSIFIERS = [
     'Development Status :: 4 - Beta',
     'Intended Audience :: Developers',
-    'License :: OSI Approved :: MIT License',
     'Operating System :: OS Independent',
     'Programming Language :: Python',
     'Framework :: Django',
     'Topic :: Database',
     'Topic :: Software Development :: Libraries :: Python Modules',
+    'License :: OSI Approved :: BSD License',
 ]
 
 setup(name='djangotoolbox',
@@ -29,5 +29,5 @@ setup(name='djangotoolbox',
       platforms=['any'],
       classifiers=CLASSIFIERS,
       install_requires=[],
-      version='0.8.1',
+      version='0.9',
 )
