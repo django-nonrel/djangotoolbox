@@ -1,9 +1,9 @@
 from .fields import ListField, SetField, DictField
-from .test import skip_if
 from django.db import models, connections
 from django.db.models import Q
-from django.test import TestCase
 from django.db.utils import DatabaseError
+from django.test import TestCase
+from django.utils import unittest
 
 class ListModel(models.Model):
     floating_point = models.FloatField()
@@ -140,7 +140,7 @@ class FilterTest(TestCase):
         # an empty list
         SetModel().save()
 
-    @skip_if(not supports_dicts)
+    @unittest.skipIf(not supports_dicts, "Backend doesn't support dicts")
     def test_dictfield(self):
         DictModel(dictfield=dict(a=1, b='55', foo=3.14)).save()
         item = DictModel.objects.get()
@@ -149,12 +149,11 @@ class FilterTest(TestCase):
         # an empty dict
         DictModel().save()
 
-    # passes on GAE production but not on sdk
-    @skip_if(True)
+    @unittest.skip('Fails with GAE SDK, but passes on production')
     def test_Q_objects(self):
         self.assertEquals([entity.names for entity in
             ListModel.objects.exclude(Q(names__lt='Sakura') | Q(names__gte='Sasuke'))],
-                [['Kakashi', 'Naruto', 'Sasuke', 'Sakura'], ])
+                [['Kakashi', 'Naruto', 'Sasuke', 'Sakura']])
 
 class BaseModel(models.Model):
     pass
