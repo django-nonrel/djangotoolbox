@@ -2,8 +2,10 @@
 
 from django.db import models
 from django.core.exceptions import ValidationError
+from django.utils.importlib import import_module
 
-__all__ = ('RawField', 'ListField', 'DictField', 'SetField', 'BlobField')
+__all__ = ('RawField', 'ListField', 'DictField', 'SetField',
+           'BlobField', 'EmbeddedModelField')
 
 class _HandleAssignment(object):
     """
@@ -65,6 +67,21 @@ class AbstractIterableField(models.Field):
 
     def to_python(self, value):
         return self._convert(self.item_field.to_python, value)
+
+    def pre_save(self, model_instance, add):
+        class fake_instance(object):
+            pass
+        fake_instance = fake_instance()
+        def wrapper(value):
+            assert not hasattr(self.item_field, 'attname')
+            fake_instance.value = value
+            self.item_field.attname = 'value'
+            try:
+                return self.item_field.pre_save(fake_instance, add)
+            finally:
+                del self.item_field.attname
+
+        return self._convert(wrapper, getattr(model_instance, self.attname))
 
     def get_db_prep_value(self, value, connection, prepared=False):
         return self._convert(self.item_field.get_db_prep_value, value,
@@ -167,3 +184,52 @@ class BlobField(models.Field):
 
     def value_to_string(self, obj):
         return str(self._get_val_from_obj(obj))
+
+class EmbeddedModelField(models.Field):
+    """
+    Field that allows you to embed a model instance.
+
+    :param model: The (optional) model class that shall be embedded
+    """
+    __metaclass__ = models.SubfieldBase
+
+    def __init__(self, embedded_model=None, *args, **kwargs):
+        self.embedded_model = embedded_model
+        kwargs.setdefault('default', None)
+        super(EmbeddedModelField, self).__init__(*args, **kwargs)
+
+    def db_type(self, connection):
+        return 'DictField:RawField'
+
+    def pre_save(self, model_instance, add):
+        embedded_instance = super(EmbeddedModelField, self).pre_save(model_instance, add)
+        if embedded_instance is None:
+            return None, None
+        if self.embedded_model is not None and \
+                not isinstance(embedded_instance, self.embedded_model):
+            raise TypeError("Expected instance of type %r, not %r"
+                            % (type(self.embedded_model), type(embedded_instance)))
+
+        data = dict((field.name, field.pre_save(embedded_instance, add))
+                    for field in embedded_instance._meta.fields)
+        return embedded_instance, data
+
+    def get_db_prep_value(self, (embedded_instance, embedded_dict), **kwargs):
+        if embedded_dict is None:
+            return None
+        values = dict()
+        for name, value in embedded_dict.iteritems():
+            field = embedded_instance._meta.get_field(name)
+            values[name] =  field.get_db_prep_value(value, **kwargs)
+        if self.embedded_model is None:
+            values.update({'_module' : embedded_instance.__class__.__module__,
+                           '_model'  : embedded_instance.__class__.__name__})
+        return values
+
+    def to_python(self, values):
+        if not isinstance(values, dict):
+            return values
+        module, model = values.pop('_module', None), values.pop('_model', None)
+        if module is not None:
+            return getattr(import_module(module), model)(**values)
+        return self.embedded_model(**values)

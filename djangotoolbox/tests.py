@@ -1,4 +1,4 @@
-from .fields import ListField, SetField, DictField
+from .fields import ListField, SetField, DictField, EmbeddedModelField
 from django.db import models, connections
 from django.db.models import Q
 from django.db.utils import DatabaseError
@@ -24,6 +24,18 @@ if supports_dicts:
     class DictModel(models.Model):
         dictfield = DictField(models.IntegerField())
         dictfield_nullable = DictField(null=True)
+        auto_now = DictField(models.DateTimeField(auto_now=True))
+
+    class EmbeddedModel(models.Model):
+        someint = models.IntegerField()
+        auto_now = models.DateTimeField(auto_now=True)
+        auto_now_add = models.DateTimeField(auto_now_add=True)
+
+    class EmbeddedModelFieldModel(models.Model):
+        simple = EmbeddedModelField(EmbeddedModel, null=True)
+        typed_list = ListField(EmbeddedModelField(SetModel))
+        untyped_list = ListField(EmbeddedModelField())
+        untyped_dict = DictField(EmbeddedModelField())
 
 class FilterTest(TestCase):
     floats = [5.3, 2.6, 9.1, 1.58]
@@ -142,9 +154,15 @@ class FilterTest(TestCase):
 
     @unittest.skipIf(not supports_dicts, "Backend doesn't support dicts")
     def test_dictfield(self):
-        DictModel(dictfield=dict(a=1, b='55', foo=3.14)).save()
+        DictModel(dictfield=dict(a=1, b='55', foo=3.14),
+                  auto_now={'a' : None}).save()
         item = DictModel.objects.get()
         self.assertEqual(item.dictfield, {u'a' : 1, u'b' : 55, u'foo' : 3})
+
+        dt = item.auto_now['a']
+        self.assertNotEqual(dt, None)
+        item.save()
+        self.assertGreater(DictModel.objects.get().auto_now['a'], dt)
         # This shouldn't raise an error becaues the default value is
         # an empty dict
         DictModel().save()
@@ -175,3 +193,60 @@ class ProxyTest(TestCase):
 
     def test_proxy_with_inheritance(self):
         self.assertRaises(DatabaseError, lambda: list(ExtendedModelProxy.objects.all()))
+
+class EmbeddedModelFieldTest(TestCase):
+    def _simple_instance(self):
+        EmbeddedModelFieldModel.objects.create(simple=EmbeddedModel(someint='5'))
+        return EmbeddedModelFieldModel.objects.get()
+
+    def test_simple(self):
+        instance = self._simple_instance()
+        self.assertIsInstance(instance.simple, EmbeddedModel)
+        # Make sure get_prep_value is called:
+        self.assertEqual(instance.simple.someint, 5)
+        # AutoFields' values should not be populated:
+        self.assertEqual(instance.simple.id, None)
+
+    def test_pre_save(self):
+        # Make sure field.pre_save is called
+        instance = self._simple_instance()
+        self.assertNotEqual(instance.simple.auto_now, None)
+        self.assertNotEqual(instance.simple.auto_now_add, None)
+        auto_now = instance.simple.auto_now
+        auto_now_add = instance.simple.auto_now_add
+        instance.save()
+        instance = EmbeddedModelFieldModel.objects.get()
+        # auto_now_add shouldn't have changed now, but auto_now should.
+        self.assertEqual(instance.simple.auto_now_add, auto_now_add)
+        self.assertGreater(instance.simple.auto_now, auto_now)
+
+    def test_typed_listfield(self):
+        EmbeddedModelFieldModel.objects.create(
+            typed_list=[SetModel(setfield=range(3)), SetModel(setfield=range(9))]
+        )
+        self.assertIn(5, EmbeddedModelFieldModel.objects.get().typed_list[1].setfield)
+
+    def test_untyped_listfield(self):
+        EmbeddedModelFieldModel.objects.create(untyped_list=[
+            EmbeddedModel(someint=7),
+            OrderedListModel(ordered_ints=range(5, 0, -1)),
+            SetModel(setfield=[1, 2, 2, 3])
+        ])
+        instances = EmbeddedModelFieldModel.objects.get().untyped_list
+        for instance, cls in zip(instances, [EmbeddedModel, OrderedListModel, SetModel]):
+            self.assertIsInstance(instance, cls)
+        self.assertNotEqual(instances[0].auto_now, None)
+        self.assertEqual(instances[1].ordered_ints, range(1, 6))
+
+    def test_untyped_dict(self):
+        EmbeddedModelFieldModel.objects.create(untyped_dict={
+            'a' : SetModel(setfield=range(3)),
+            'b' : DictModel(dictfield={'a' : 1, 'b' : 2}),
+            'c' : DictModel(dictfield={}, auto_now={'y' : 1})
+        })
+        data = EmbeddedModelFieldModel.objects.get().untyped_dict
+        self.assertIsInstance(data['a'], SetModel)
+        self.assertNotEqual(data['c'].auto_now['y'], None)
+EmbeddedModelFieldTest = unittest.skipIf(
+    not supports_dicts, "Backend doesn't support dicts")(
+    EmbeddedModelFieldTest)
