@@ -26,16 +26,16 @@ if supports_dicts:
         dictfield_nullable = DictField(null=True)
         auto_now = DictField(models.DateTimeField(auto_now=True))
 
+    class EmbeddedModelFieldModel(models.Model):
+        simple = EmbeddedModelField('EmbeddedModel', null=True)
+        typed_list = ListField(EmbeddedModelField('SetModel'))
+        untyped_list = ListField(EmbeddedModelField())
+        untyped_dict = DictField(EmbeddedModelField())
+
     class EmbeddedModel(models.Model):
         someint = models.IntegerField()
         auto_now = models.DateTimeField(auto_now=True)
         auto_now_add = models.DateTimeField(auto_now_add=True)
-
-    class EmbeddedModelFieldModel(models.Model):
-        simple = EmbeddedModelField(EmbeddedModel, null=True)
-        typed_list = ListField(EmbeddedModelField(SetModel))
-        untyped_list = ListField(EmbeddedModelField())
-        untyped_dict = DictField(EmbeddedModelField())
 
 class FilterTest(TestCase):
     floats = [5.3, 2.6, 9.1, 1.58]
