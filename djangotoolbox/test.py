@@ -1,6 +1,7 @@
 from .utils import object_list_to_table, equal_lists
 from django.test import TestCase
-from django.test.simple import DjangoTestSuiteRunner, DjangoTestRunner
+from django.test.simple import DjangoTestSuiteRunner
+from django.utils.unittest import TextTestRunner
 import sys
 
 try:
@@ -45,60 +46,7 @@ class ModelTestCase(TestCase):
                 print state
             self.fail('DB state not valid')
 
-class CapturingTestRunner(DjangoTestRunner):
-    def _makeResult(self):
-        result = super(CapturingTestRunner, self)._makeResult()
-        stdout = sys.stdout
-        stderr = sys.stderr
-
-        def extend_error(errors):
-            try:
-                captured_stdout = sys.stdout.getvalue()
-                captured_stderr = sys.stderr.getvalue()
-            except AttributeError:
-                captured_stdout = captured_stderr = ''
-            sys.stdout = stdout
-            sys.stderr = stderr
-            t, e = errors[-1]
-            if captured_stdout:
-                e += '\n--------------- Captured stdout: ---------------\n'
-                e += captured_stdout
-            if captured_stderr:
-                e += '\n--------------- Captured stderr: ---------------\n'
-                e += captured_stderr
-            if captured_stdout or captured_stderr:
-                e += '\n--------------- End captured output ---------------\n\n'
-            errors[-1] = (t, e)
-
-        def override(func):
-            func.orig = getattr(result, func.__name__)
-            setattr(result, func.__name__, func)
-            return func
-
-        @override
-        def startTest(test):
-            startTest.orig(test)
-            sys.stdout = StringIO()
-            sys.stderr = StringIO()
-
-        @override
-        def addSuccess(test):
-            addSuccess.orig(test)
-            sys.stdout = stdout
-            sys.stderr = stderr
-
-        @override
-        def addError(test, err):
-            addError.orig(test, err)
-            extend_error(result.errors)
-
-        @override
-        def addFailure(test, err):
-            addFailure.orig(test, err)
-            extend_error(result.failures)
-
-        return result
-
 class CapturingTestSuiteRunner(DjangoTestSuiteRunner):
+    """Captures stdout/stderr during test and shows them next to tracebacks"""
     def run_suite(self, suite, **kwargs):
-        return CapturingTestRunner(verbosity=self.verbosity, failfast=self.failfast).run(suite)
+        return TextTestRunner(verbosity=self.verbosity, failfast=self.failfast, buffer=True).run(suite)
