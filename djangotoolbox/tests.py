@@ -1,7 +1,9 @@
 from .fields import ListField, SetField, DictField, EmbeddedModelField
 from django.db import models, connections
 from django.db.models import Q
+from django.db.models.signals import post_save
 from django.db.utils import DatabaseError
+from django.dispatch.dispatcher import receiver
 from django.test import TestCase
 from django.utils import unittest
 
@@ -250,3 +252,16 @@ class EmbeddedModelFieldTest(TestCase):
 EmbeddedModelFieldTest = unittest.skipIf(
     not supports_dicts, "Backend doesn't support dicts")(
     EmbeddedModelFieldTest)
+
+class SignalTest(TestCase):
+    def test_post_save(self):
+        created = []
+        @receiver(post_save, sender=SetModel)
+        def handle(**kwargs):
+            created.append(kwargs['created'])
+        SetModel().save()
+        self.assertEqual(created, [True])
+        SetModel.objects.get().save()
+        self.assertEqual(created, [True, False])
+        list(SetModel.objects.all())[0].save()
+        self.assertEqual(created, [True, False, False])
