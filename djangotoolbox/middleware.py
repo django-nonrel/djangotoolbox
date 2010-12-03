@@ -5,6 +5,9 @@ from django.utils.cache import patch_cache_control
 LOGIN_REQUIRED_PREFIXES = getattr(settings, 'LOGIN_REQUIRED_PREFIXES', ())
 NO_LOGIN_REQUIRED_PREFIXES = getattr(settings, 'NO_LOGIN_REQUIRED_PREFIXES', ())
 
+ALLOWED_DOMAINS = getattr(settings, 'ALLOWED_DOMAINS', None)
+NON_REDIRECTED_PATHS = getattr(settings, 'NON_REDIRECTED_PATHS', ())
+
 class LoginRequiredMiddleware(object):
     """
     Redirects to login page if request path begins with a
@@ -32,9 +35,11 @@ class RedirectMiddleware(object):
         host = request.get_host().split(':')[0]
         # Turn off redirects when in debug mode, running unit tests, or
         # when handling an App Engine cron job.
-        if settings.DEBUG or host == 'testserver' or \
-                not getattr(settings, 'ALLOWED_DOMAINS', None) or \
-                request.META.get('HTTP_X_APPENGINE_CRON') == 'true':
+        if (settings.DEBUG or host == 'testserver' or
+                not ALLOWED_DOMAINS or
+                request.META.get('HTTP_X_APPENGINE_CRON') == 'true' or
+                request.path.startswith('/_ah/') or
+                request.path in NON_REDIRECTED_PATHS):
             return
         if host not in settings.ALLOWED_DOMAINS:
             return HttpResponseRedirect('http://' + settings.ALLOWED_DOMAINS[0])
