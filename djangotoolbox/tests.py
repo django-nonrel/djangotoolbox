@@ -286,3 +286,6 @@ class SelectRelatedTest(TestCase):
         source = Source.objects.all().select_related()[0]
         self.assertEqual(source.target.pk, target.pk)
         self.assertEqual(source.target.index, target.index)
+        source = Source.objects.all().select_related('target')[0]
+        self.assertEqual(source.target.pk, target.pk)
+        self.assertEqual(source.target.index, target.index)
