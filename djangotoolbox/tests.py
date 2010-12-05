@@ -7,6 +7,13 @@ from django.dispatch.dispatcher import receiver
 from django.test import TestCase
 from django.utils import unittest
 
+class Target(models.Model):
+    index = models.IntegerField()
+
+class Source(models.Model):
+    target = models.ForeignKey(Target)
+    index = models.IntegerField()
+
 class ListModel(models.Model):
     floating_point = models.FloatField()
     names = ListField(models.CharField(max_length=500))
@@ -263,5 +270,19 @@ class SignalTest(TestCase):
         self.assertEqual(created, [True])
         SetModel.objects.get().save()
         self.assertEqual(created, [True, False])
-        list(SetModel.objects.all())[0].save()
+        qs = SetModel.objects.all()
+        list(qs)[0].save()
         self.assertEqual(created, [True, False, False])
+        list(qs)[0].save()
+        self.assertEqual(created, [True, False, False, False])
+        list(qs.select_related())[0].save()
+        self.assertEqual(created, [True, False, False, False, False])
+
+class SelectRelatedTest(TestCase):
+    def test_select_related(self):
+        target = Target(index=5)
+        target.save()
+        Source(target=target, index=8).save()
+        source = Source.objects.all().select_related()[0]
+        self.assertEqual(source.target.pk, target.pk)
+        self.assertEqual(source.target.index, target.index)
