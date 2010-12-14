@@ -346,8 +346,8 @@ class NonrelInsertCompiler(object):
                 if not field.null and value is None:
                     raise DatabaseError("You can't set %s (a non-nullable "
                                         "field) to None!" % field.name)
-                value = self.convert_value_for_db(field.db_type(connection=self.connection),
-                    value)
+                db_type = field.db_type(connection=self.connection)
+                value = self.convert_value_for_db(db_type, value)
             data[column] = value
         return self.insert(data, return_id=return_id)
 
