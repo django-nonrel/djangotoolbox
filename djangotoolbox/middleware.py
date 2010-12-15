@@ -7,6 +7,8 @@ NO_LOGIN_REQUIRED_PREFIXES = getattr(settings, 'NO_LOGIN_REQUIRED_PREFIXES', ())
 
 ALLOWED_DOMAINS = getattr(settings, 'ALLOWED_DOMAINS', None)
 NON_REDIRECTED_PATHS = getattr(settings, 'NON_REDIRECTED_PATHS', ())
+NON_REDIRECTED_BASE_PATHS = tuple(path.rstrip('/') + '/'
+                                  for path in NON_REDIRECTED_PATHS)
 
 class LoginRequiredMiddleware(object):
     """
@@ -39,7 +41,8 @@ class RedirectMiddleware(object):
                 not ALLOWED_DOMAINS or
                 request.META.get('HTTP_X_APPENGINE_CRON') == 'true' or
                 request.path.startswith('/_ah/') or
-                request.path in NON_REDIRECTED_PATHS):
+                request.path in NON_REDIRECTED_PATHS or
+                request.path.startswith(NON_REDIRECTED_BASE_PATHS)):
             return
         if host not in settings.ALLOWED_DOMAINS:
             return HttpResponseRedirect('http://' + settings.ALLOWED_DOMAINS[0])
