@@ -20,6 +20,13 @@ use the `nonrel permission backend`_.
 Changelog
 =============================================================
 
+Version 0.9.1
+-------------------------------------------------------------
+
+* Added lazy model lookups to EmbeddedModelField
+* Simplified CapturingTestSuiteRunner by using Django's integrated unittest2 package
+* Several new unit tests
+
 Version 0.8.1
 -------------------------------------------------------------
 
