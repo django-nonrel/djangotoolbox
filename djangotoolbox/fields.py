@@ -91,6 +91,12 @@ class AbstractIterableField(models.Field):
         return self._convert(self.item_field.get_db_prep_save,
                              value, connection=connection)
 
+    # TODO/XXX: Remove this once we have a cleaner solution
+    def get_db_prep_lookup(self, lookup_type, value, connection, prepared=False):
+        if hasattr(value, 'as_lookup_value'):
+            value = value.as_lookup_value(self, lookup_type, connection)
+        return value
+
     def validate(self, values, model_instance):
         try:
             iter(values)
@@ -247,6 +253,12 @@ class EmbeddedModelField(models.Field):
             values.update({'_module' : embedded_instance.__class__.__module__,
                            '_model'  : embedded_instance.__class__.__name__})
         return values
+
+    # TODO/XXX: Remove this once we have a cleaner solution
+    def get_db_prep_lookup(self, lookup_type, value, connection, prepared=False):
+        if hasattr(value, 'as_lookup_value'):
+            value = value.as_lookup_value(self, lookup_type, connection)
+        return value
 
     def to_python(self, values):
         if not isinstance(values, dict):
