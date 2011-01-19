@@ -45,7 +45,8 @@ class RedirectMiddleware(object):
                 request.path.startswith(NON_REDIRECTED_BASE_PATHS)):
             return
         if host not in settings.ALLOWED_DOMAINS:
-            return HttpResponseRedirect('http://' + settings.ALLOWED_DOMAINS[0])
+            return HttpResponseRedirect('http://' + settings.ALLOWED_DOMAINS[0]
+                                        + request.path)
 
 class NoHistoryCacheMiddleware(object):
     """
