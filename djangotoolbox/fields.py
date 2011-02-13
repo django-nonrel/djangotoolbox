@@ -245,10 +245,10 @@ class EmbeddedModelField(models.Field):
     def get_db_prep_value(self, (embedded_instance, embedded_dict), **kwargs):
         if embedded_dict is None:
             return None
-        values = dict()
+        values = {}
         for name, value in embedded_dict.iteritems():
             field = embedded_instance._meta.get_field(name)
-            values[field.attname] =  field.get_db_prep_value(value, **kwargs)
+            values[field.column] =  field.get_db_prep_value(value, **kwargs)
         if self.embedded_model is None:
             values.update({'_module' : embedded_instance.__class__.__module__,
                            '_model'  : embedded_instance.__class__.__name__})
