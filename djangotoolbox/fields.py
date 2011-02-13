@@ -248,7 +248,7 @@ class EmbeddedModelField(models.Field):
         values = dict()
         for name, value in embedded_dict.iteritems():
             field = embedded_instance._meta.get_field(name)
-            values[name] =  field.get_db_prep_value(value, **kwargs)
+            values[field.attname] =  field.get_db_prep_value(value, **kwargs)
         if self.embedded_model is None:
             values.update({'_module' : embedded_instance.__class__.__module__,
                            '_model'  : embedded_instance.__class__.__name__})

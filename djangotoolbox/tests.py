@@ -42,6 +42,7 @@ if supports_dicts:
         untyped_dict = DictField(EmbeddedModelField())
 
     class EmbeddedModel(models.Model):
+        some_relation = models.ForeignKey(DictModel, null=True)
         someint = models.IntegerField()
         auto_now = models.DateTimeField(auto_now=True)
         auto_now_add = models.DateTimeField(auto_now_add=True)
@@ -256,6 +257,14 @@ class EmbeddedModelFieldTest(TestCase):
         data = EmbeddedModelFieldModel.objects.get().untyped_dict
         self.assertIsInstance(data['a'], SetModel)
         self.assertNotEqual(data['c'].auto_now['y'], None)
+
+    def test_foreignkey_in_embedded_object(self):
+        simple = EmbeddedModel(some_relation=DictModel.objects.create())
+        obj = EmbeddedModelFieldModel.objects.create(simple=simple)
+        simple = EmbeddedModelFieldModel.objects.get().simple
+        self.assertNotIn('some_relation', simple.__dict__)
+        self.assertIsInstance(simple.__dict__['some_relation_id'], type(obj.id))
+        self.assertIsInstance(simple.some_relation, DictModel)
 EmbeddedModelFieldTest = unittest.skipIf(
     not supports_dicts, "Backend doesn't support dicts")(
     EmbeddedModelFieldTest)
