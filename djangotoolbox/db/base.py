@@ -58,6 +58,9 @@ class NonrelDatabaseOperations(BaseDatabaseOperations):
         return [datetime.datetime(value, 1, 1, 0, 0, 0, 0),
                 datetime.datetime(value+1, 1, 1, 0, 0, 0, 0)]
 
+    def pk_default_value(self):
+        return None
+
     def value_to_db_auto(self, value):
         """
         Transform a value to an object compatible with the AutoField required
