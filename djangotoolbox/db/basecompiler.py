@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.db.models.fields import NOT_PROVIDED
 from django.db.models.sql import aggregates as sqlaggregates
 from django.db.models.sql.compiler import SQLCompiler
 from django.db.models.sql.constants import LOOKUP_SEP, MULTI, SINGLE
@@ -246,11 +247,13 @@ class NonrelCompiler(SQLCompiler):
     def _make_result(self, entity, fields):
         result = []
         for field in fields:
-            if not field.null and entity.get(field.column,
-                    field.get_default()) is None:
+            value = entity.get(field.column, NOT_PROVIDED)
+            if value is NOT_PROVIDED:
+                value = field.get_default()
+            if value is None and not field.null:
                 raise DatabaseError("Non-nullable field %s can't be None!" % field.name)
-            result.append(self.convert_value_from_db(field.db_type(
-                connection=self.connection), entity.get(field.column, field.get_default())))
+            value = self.convert_value_from_db(field.db_type(connection=self.connection), value)
+            result.append(value)
         return result
 
     def check_query(self):
