@@ -267,6 +267,8 @@ class EmbeddedModelField(models.Field):
         if not isinstance(values, dict):
             return values
         module, model = values.pop('_module', None), values.pop('_model', None)
+        # Let's make sure keys are instances of str
+        values = dict([(str(k), v) for k,v in values.items()])
         if module is not None:
             return getattr(import_module(module), model)(**values)
         return self.embedded_model(**values)
