@@ -48,6 +48,7 @@ if supports_dicts:
         typed_list = ListField(EmbeddedModelField('SetModel'))
         untyped_list = ListField(EmbeddedModelField())
         untyped_dict = DictField(EmbeddedModelField())
+        ordered_list = ListField(EmbeddedModelField(), ordering=lambda obj: obj.index)
 
     class EmbeddedModel(models.Model):
         some_relation = models.ForeignKey(DictModel, null=True)
@@ -259,9 +260,13 @@ class EmbeddedModelFieldTest(TestCase):
 
     def test_typed_listfield(self):
         EmbeddedModelFieldModel.objects.create(
-            typed_list=[SetModel(setfield=range(3)), SetModel(setfield=range(9))]
+            typed_list=[SetModel(setfield=range(3)), SetModel(setfield=range(9))],
+            ordered_list=[Target(index=i) for i in xrange(5, 0, -1)]
         )
-        self.assertIn(5, EmbeddedModelFieldModel.objects.get().typed_list[1].setfield)
+        obj = EmbeddedModelFieldModel.objects.get()
+        self.assertIn(5, obj.typed_list[1].setfield)
+        self.assertEqual([target.index for target in obj.ordered_list],
+                         range(1, 6))
 
     def test_untyped_listfield(self):
         EmbeddedModelFieldModel.objects.create(untyped_list=[
