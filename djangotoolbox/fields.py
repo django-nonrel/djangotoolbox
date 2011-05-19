@@ -236,10 +236,11 @@ class EmbeddedModelField(models.Field):
         embedded_instance = super(EmbeddedModelField, self).pre_save(model_instance, add)
         if embedded_instance is None:
             return None, None
-        if self.embedded_model is not None and \
-                not isinstance(embedded_instance, self.embedded_model):
-            raise TypeError("Expected instance of type %r, not %r"
-                            % (type(self.embedded_model), type(embedded_instance)))
+
+        model = self.embedded_model or models.Model
+        if not isinstance(embedded_instance, model):
+            raise TypeError("Expected instance of type %r, not %r" % (
+                            type(model), type(embedded_instance)))
 
         data = dict((field.name, field.pre_save(embedded_instance, add))
                     for field in embedded_instance._meta.fields)

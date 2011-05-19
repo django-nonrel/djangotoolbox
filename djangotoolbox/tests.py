@@ -37,6 +37,7 @@ if supports_dicts:
 
     class EmbeddedModelFieldModel(models.Model):
         simple = EmbeddedModelField('EmbeddedModel', null=True)
+        simple_untyped = EmbeddedModelField(null=True)
         typed_list = ListField(EmbeddedModelField('SetModel'))
         untyped_list = ListField(EmbeddedModelField())
         untyped_dict = DictField(EmbeddedModelField())
@@ -229,6 +230,14 @@ class EmbeddedModelFieldTest(TestCase):
         # auto_now_add shouldn't have changed now, but auto_now should.
         self.assertEqual(instance.simple.auto_now_add, auto_now_add)
         self.assertGreater(instance.simple.auto_now, auto_now)
+
+    def test_error_messages(self):
+        for kwargs in (
+            {'simple_untyped' : 42},
+            {'simple' : 42}
+        ):
+            self.assertRaisesRegexp(TypeError, "Expected instance of type",
+                                    EmbeddedModelFieldModel(**kwargs).save)
 
     def test_typed_listfield(self):
         EmbeddedModelFieldModel.objects.create(
