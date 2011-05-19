@@ -7,6 +7,13 @@ from django.dispatch.dispatcher import receiver
 from django.test import TestCase
 from django.utils import unittest
 
+def count_calls(func):
+    def wrapper(*args, **kwargs):
+        wrapper.calls += 1
+        return func(*args, **kwargs)
+    wrapper.calls = 0
+    return wrapper
+
 class Target(models.Model):
     index = models.IntegerField()
 
@@ -23,7 +30,7 @@ class ListModel(models.Model):
 
 class OrderedListModel(models.Model):
     ordered_ints = ListField(models.IntegerField(max_length=500), default=[],
-                             ordering=lambda x: x, null=True)
+                             ordering=count_calls(lambda x:x), null=True)
     ordered_nullable = ListField(ordering=lambda x:x, null=True)
 
 class SetModel(models.Model):
@@ -38,9 +45,11 @@ if supports_dicts:
 
     class EmbeddedModelFieldModel(models.Model):
         simple = EmbeddedModelField('EmbeddedModel', null=True)
+        simple_untyped = EmbeddedModelField(null=True)
         typed_list = ListField(EmbeddedModelField('SetModel'))
         untyped_list = ListField(EmbeddedModelField())
         untyped_dict = DictField(EmbeddedModelField())
+        ordered_list = ListField(EmbeddedModelField(), ordering=lambda obj: obj.index)
 
     class EmbeddedModel(models.Model):
         some_relation = models.ForeignKey(DictModel, null=True)
@@ -78,9 +87,20 @@ class FilterTest(TestCase):
         self.assertEqual(ListModel().names_with_default, [])
 
     def test_ordering(self):
-        OrderedListModel(ordered_ints=self.unordered_ints).save()
+        f = OrderedListModel._meta.fields[1]
+        f.ordering.calls = 0
+
+        # ensure no ordering happens on assignment
+        obj = OrderedListModel()
+        obj.ordered_ints = self.unordered_ints
+        self.assertEqual(f.ordering.calls, 0)
+
+        obj.save()
         self.assertEqual(OrderedListModel.objects.get().ordered_ints,
                          sorted(self.unordered_ints))
+        # ordering should happen only once, i.e. the order function may be
+        # called N times at most (N being the number of items in the list)
+        self.assertLessEqual(f.ordering.calls, len(self.unordered_ints))
 
     def test_gt(self):
         # test gt on list
@@ -231,11 +251,23 @@ class EmbeddedModelFieldTest(TestCase):
         self.assertEqual(instance.simple.auto_now_add, auto_now_add)
         self.assertGreater(instance.simple.auto_now, auto_now)
 
+    def test_error_messages(self):
+        for kwargs in (
+            {'simple_untyped' : 42},
+            {'simple' : 42}
+        ):
+            self.assertRaisesRegexp(TypeError, "Expected instance of type",
+                                    EmbeddedModelFieldModel(**kwargs).save)
+
     def test_typed_listfield(self):
         EmbeddedModelFieldModel.objects.create(
-            typed_list=[SetModel(setfield=range(3)), SetModel(setfield=range(9))]
+            typed_list=[SetModel(setfield=range(3)), SetModel(setfield=range(9))],
+            ordered_list=[Target(index=i) for i in xrange(5, 0, -1)]
         )
-        self.assertIn(5, EmbeddedModelFieldModel.objects.get().typed_list[1].setfield)
+        obj = EmbeddedModelFieldModel.objects.get()
+        self.assertIn(5, obj.typed_list[1].setfield)
+        self.assertEqual([target.index for target in obj.ordered_list],
+                         range(1, 6))
 
     def test_untyped_listfield(self):
         EmbeddedModelFieldModel.objects.create(untyped_list=[

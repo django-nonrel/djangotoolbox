@@ -127,11 +127,13 @@ class ListField(AbstractIterableField):
                             "not of type %r" %  type(self.ordering))
         super(ListField, self).__init__(*args, **kwargs)
 
-    def _convert(self, func, values, *args, **kwargs):
-        values = super(ListField, self)._convert(func, values, *args, **kwargs)
-        if values is not None and self.ordering is not None:
+    def pre_save(self, model_instance, add):
+        values = getattr(model_instance, self.attname)
+        if values is None:
+            return None
+        if values and self.ordering:
             values.sort(key=self.ordering)
-        return values
+        return super(ListField, self).pre_save(model_instance, add)
 
 class SetField(AbstractIterableField):
     """
@@ -203,8 +205,8 @@ class EmbeddedModelField(models.Field):
     """
     __metaclass__ = models.SubfieldBase
 
-    def __init__(self, embedded_model=None, *args, **kwargs):
-        self.embedded_model = embedded_model
+    def __init__(self, model=None, *args, **kwargs):
+        self.embedded_model = model
         kwargs.setdefault('default', None)
         super(EmbeddedModelField, self).__init__(*args, **kwargs)
 
@@ -236,10 +238,11 @@ class EmbeddedModelField(models.Field):
         embedded_instance = super(EmbeddedModelField, self).pre_save(model_instance, add)
         if embedded_instance is None:
             return None, None
-        if self.embedded_model is not None and \
-                not isinstance(embedded_instance, self.embedded_model):
-            raise TypeError("Expected instance of type %r, not %r"
-                            % (type(self.embedded_model), type(embedded_instance)))
+
+        model = self.embedded_model or models.Model
+        if not isinstance(embedded_instance, model):
+            raise TypeError("Expected instance of type %r, not %r" % (
+                            type(model), type(embedded_instance)))
 
         data = dict((field.name, field.pre_save(embedded_instance, add))
                     for field in embedded_instance._meta.fields)
