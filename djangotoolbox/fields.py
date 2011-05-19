@@ -127,11 +127,13 @@ class ListField(AbstractIterableField):
                             "not of type %r" %  type(self.ordering))
         super(ListField, self).__init__(*args, **kwargs)
 
-    def _convert(self, func, values, *args, **kwargs):
-        values = super(ListField, self)._convert(func, values, *args, **kwargs)
-        if values is not None and self.ordering is not None:
+    def pre_save(self, model_instance, add):
+        values = getattr(model_instance, self.attname)
+        if values is None:
+            return None
+        if values and self.ordering:
             values.sort(key=self.ordering)
-        return values
+        return super(ListField, self).pre_save(model_instance, add)
 
 class SetField(AbstractIterableField):
     """

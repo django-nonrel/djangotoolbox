@@ -7,6 +7,13 @@ from django.dispatch.dispatcher import receiver
 from django.test import TestCase
 from django.utils import unittest
 
+def count_calls(func):
+    def wrapper(*args, **kwargs):
+        wrapper.calls += 1
+        return func(*args, **kwargs)
+    wrapper.calls = 0
+    return wrapper
+
 class Target(models.Model):
     index = models.IntegerField()
 
@@ -22,7 +29,7 @@ class ListModel(models.Model):
 
 class OrderedListModel(models.Model):
     ordered_ints = ListField(models.IntegerField(max_length=500), default=[],
-                             ordering=lambda x: x, null=True)
+                             ordering=count_calls(lambda x:x), null=True)
     ordered_nullable = ListField(ordering=lambda x:x, null=True)
 
 class SetModel(models.Model):
@@ -78,9 +85,20 @@ class FilterTest(TestCase):
         self.assertEqual(ListModel().names_with_default, [])
 
     def test_ordering(self):
-        OrderedListModel(ordered_ints=self.unordered_ints).save()
+        f = OrderedListModel._meta.fields[1]
+        f.ordering.calls = 0
+
+        # ensure no ordering happens on assignment
+        obj = OrderedListModel()
+        obj.ordered_ints = self.unordered_ints
+        self.assertEqual(f.ordering.calls, 0)
+
+        obj.save()
         self.assertEqual(OrderedListModel.objects.get().ordered_ints,
                          sorted(self.unordered_ints))
+        # ordering should happen only once, i.e. the order function may be
+        # called N times at most (N being the number of items in the list)
+        self.assertLessEqual(f.ordering.calls, len(self.unordered_ints))
 
     def test_gt(self):
         # test gt on list
