@@ -15,6 +15,7 @@ class Source(models.Model):
     index = models.IntegerField()
 
 class ListModel(models.Model):
+    integer = models.IntegerField(primary_key=True)
     floating_point = models.FloatField()
     names = ListField(models.CharField(max_length=500))
     names_with_default = ListField(models.CharField(max_length=500), default=[])
@@ -54,13 +55,13 @@ class FilterTest(TestCase):
 
     def setUp(self):
         for i, float in enumerate(FilterTest.floats):
-            ListModel(floating_point=float, names=FilterTest.names[:i+1]).save()
+            ListModel(integer=i+1, floating_point=float, names=FilterTest.names[:i+1]).save()
 
     def test_startswith(self):
-        self.assertEquals([entity.names for entity in
-                           ListModel.objects.filter(names__startswith='Sa')],
-                          [['Kakashi', 'Naruto', 'Sasuke',],
-                            ['Kakashi', 'Naruto', 'Sasuke', 'Sakura',]])
+        self.assertEquals(dict([(entity.pk, entity.names) for entity in
+                           ListModel.objects.filter(names__startswith='Sa')]),
+                          dict([(3, ['Kakashi', 'Naruto', 'Sasuke',]),
+                            (4, ['Kakashi', 'Naruto', 'Sasuke', 'Sakura',]), ]))
 
     def test_options(self):
         self.assertEqual([entity.names_with_default for entity in
@@ -83,34 +84,34 @@ class FilterTest(TestCase):
 
     def test_gt(self):
         # test gt on list
-        self.assertEquals([entity.names for entity in
-                           ListModel.objects.filter(names__gt='Kakashi')],
-                          [[u'Kakashi', u'Naruto',],
-                            [u'Kakashi', u'Naruto', u'Sasuke',],
-                            [u'Kakashi', u'Naruto', u'Sasuke', u'Sakura',]])
+        self.assertEquals(dict([(entity.pk, entity.names) for entity in
+                           ListModel.objects.filter(names__gt='Kakashi')]),
+                          dict([(2, [u'Kakashi', u'Naruto',]),
+                            (3, [u'Kakashi', u'Naruto', u'Sasuke',]),
+                            (4, [u'Kakashi', u'Naruto', u'Sasuke', u'Sakura',]), ]))
 
     def test_lt(self):
         # test lt on list
-        self.assertEquals([entity.names for entity in
-                           ListModel.objects.filter(names__lt='Naruto')],
-                          [[u'Kakashi',], [u'Kakashi', u'Naruto',],
-                            [u'Kakashi', u'Naruto', u'Sasuke',],
-                            [u'Kakashi', u'Naruto', u'Sasuke', u'Sakura',]])
+        self.assertEquals(dict([(entity.pk, entity.names) for entity in
+                           ListModel.objects.filter(names__lt='Naruto')]),
+                          dict([(1, [u'Kakashi',]), (2, [u'Kakashi', u'Naruto',]),
+                            (3, [u'Kakashi', u'Naruto', u'Sasuke',]),
+                            (4, [u'Kakashi', u'Naruto', u'Sasuke', u'Sakura',]), ]))
 
     def test_gte(self):
         # test gte on list
-        self.assertEquals([entity.names for entity in
-                           ListModel.objects.filter(names__gte='Sakura')],
-                          [[u'Kakashi', u'Naruto', u'Sasuke',],
-                            [u'Kakashi', u'Naruto', u'Sasuke', u'Sakura',]])
+        self.assertEquals(dict([(entity.pk, entity.names) for entity in
+                           ListModel.objects.filter(names__gte='Sakura')]),
+                          dict([(3, [u'Kakashi', u'Naruto', u'Sasuke',]),
+                            (4, [u'Kakashi', u'Naruto', u'Sasuke', u'Sakura',]), ]))
 
     def test_lte(self):
         # test lte on list
-        self.assertEquals([entity.names for entity in
-                           ListModel.objects.filter(names__lte='Kakashi')],
-                          [[u'Kakashi',], [u'Kakashi', u'Naruto',],
-                            [u'Kakashi', u'Naruto', u'Sasuke',],
-                            [u'Kakashi', u'Naruto', u'Sasuke', u'Sakura',]])
+        self.assertEquals(dict([(entity.pk, entity.names) for entity in
+                           ListModel.objects.filter(names__lte='Kakashi')]),
+                          dict([(1, [u'Kakashi',]), (2, [u'Kakashi', u'Naruto',]),
+                            (3, [u'Kakashi', u'Naruto', u'Sasuke',]),
+                            (4, [u'Kakashi', u'Naruto', u'Sasuke', u'Sakura',]), ]))
 
     def test_equals(self):
         # test equality filter on list
@@ -128,11 +129,11 @@ class FilterTest(TestCase):
             names__isnull=True).count(), 0)
 
     def test_exclude(self):
-        self.assertEquals([entity.names for entity in
+        self.assertEquals(dict([(entity.pk, entity.names) for entity in
                            ListModel.objects.all().exclude(
-                            names__lt='Sakura')],
-                          [[u'Kakashi', u'Naruto', u'Sasuke',],
-                           [u'Kakashi', u'Naruto', u'Sasuke', u'Sakura',]])
+                            names__lt='Sakura')]),
+                          dict([(3, [u'Kakashi', u'Naruto', u'Sasuke',]),
+                           (4, [u'Kakashi', u'Naruto', u'Sasuke', u'Sakura',]), ]))
 
     def test_chained_filter(self):
         self.assertEquals([entity.names for entity in
