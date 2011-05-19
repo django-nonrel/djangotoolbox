@@ -203,8 +203,8 @@ class EmbeddedModelField(models.Field):
     """
     __metaclass__ = models.SubfieldBase
 
-    def __init__(self, embedded_model=None, *args, **kwargs):
-        self.embedded_model = embedded_model
+    def __init__(self, model=None, *args, **kwargs):
+        self.embedded_model = model
         kwargs.setdefault('default', None)
         super(EmbeddedModelField, self).__init__(*args, **kwargs)
 
