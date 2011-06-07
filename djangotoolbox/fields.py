@@ -247,7 +247,7 @@ class EmbeddedModelField(models.Field):
         values = []
         for field in embedded_instance._meta.fields:
             value = field.pre_save(embedded_instance, add)
-            if field.primary_key and value == field.default:
+            if field.primary_key and value is None:
                 # exclude unset pks ({"id" : None})
                 continue
             values.append((field, value))
