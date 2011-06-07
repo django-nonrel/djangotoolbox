@@ -235,8 +235,13 @@ class EmbeddedModelFieldTest(TestCase):
         self.assertIsInstance(instance.simple, EmbeddedModel)
         # Make sure get_prep_value is called:
         self.assertEqual(instance.simple.someint, 5)
-        # AutoFields' values should not be populated:
+        # Primary keys should not be populated...
         self.assertEqual(instance.simple.id, None)
+        # ... unless set explicitly.
+        instance.simple.id = instance.id
+        instance.save()
+        instance = EmbeddedModelFieldModel.objects.get()
+        self.assertEqual(instance.simple.id, instance.id)
 
     def test_pre_save(self):
         # Make sure field.pre_save is called

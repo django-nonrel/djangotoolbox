@@ -244,17 +244,21 @@ class EmbeddedModelField(models.Field):
             raise TypeError("Expected instance of type %r, not %r" % (
                             type(model), type(embedded_instance)))
 
-        data = dict((field.name, field.pre_save(embedded_instance, add))
-                    for field in embedded_instance._meta.fields)
-        return embedded_instance, data
+        values = []
+        for field in embedded_instance._meta.fields:
+            value = field.pre_save(embedded_instance, add)
+            if field.primary_key and value == field.default:
+                # exclude unset pks ({"id" : None})
+                continue
+            values.append((field, value))
 
-    def get_db_prep_value(self, (embedded_instance, embedded_dict), **kwargs):
-        if embedded_dict is None:
+        return embedded_instance, values
+
+    def get_db_prep_value(self, (embedded_instance, value_list), **kwargs):
+        if value_list is None:
             return None
-        values = {}
-        for name, value in embedded_dict.iteritems():
-            field = embedded_instance._meta.get_field(name)
-            values[field.column] =  field.get_db_prep_value(value, **kwargs)
+        values = dict((field.column, field.get_db_prep_value(value, **kwargs))
+                      for field, value in value_list)
         if self.embedded_model is None:
             values.update({'_module' : embedded_instance.__class__.__module__,
                            '_model'  : embedded_instance.__class__.__name__})
