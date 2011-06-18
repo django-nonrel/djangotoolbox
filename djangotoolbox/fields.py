@@ -56,9 +56,13 @@ class AbstractIterableField(models.Field):
         if issubclass(metaclass, models.SubfieldBase):
             setattr(cls, self.name, _HandleAssignment(self))
 
+    @property
+    def db_type_prefix(self):
+        return self.__class__.__name__
+
     def db_type(self, connection):
         item_db_type = self.item_field.db_type(connection=connection)
-        return '%s:%s' % (self.__class__.__name__, item_db_type)
+        return '%s:%s' % (self.db_type_prefix, item_db_type)
 
     def _convert(self, func, values, *args, **kwargs):
         if isinstance(values, (list, tuple, set)):
@@ -119,6 +123,7 @@ class ListField(AbstractIterableField):
     database.
     """
     _type = list
+    db_type_prefix = 'ListField'
 
     def __init__(self, *args, **kwargs):
         self.ordering = kwargs.pop('ordering', None)
@@ -140,6 +145,7 @@ class SetField(AbstractIterableField):
     Field representing a Python ``set``.
     """
     _type = set
+    db_type_prefix = 'SetField'
 
 class DictField(AbstractIterableField):
     """
@@ -151,6 +157,7 @@ class DictField(AbstractIterableField):
     Depending on the backend, keys that aren't strings might not be allowed.
     """
     _type = dict
+    db_type_prefix = 'DictField'
 
     def _convert(self, func, values, *args, **kwargs):
         if values is None:
