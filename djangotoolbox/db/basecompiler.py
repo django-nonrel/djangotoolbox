@@ -1,3 +1,4 @@
+from datetime import date, time, datetime
 from django.conf import settings
 from django.db.models.fields import NOT_PROVIDED
 from django.db.models.sql import aggregates as sqlaggregates
@@ -164,7 +165,16 @@ class NonrelQuery(object):
                     else:
                         value = value[0]
 
-                submatch = EMULATED_OPS[lookup_type](entity[column], value)
+                if entity[column] is None:
+                    if isinstance(value, (datetime, date, time)):
+                        submatch = lookup_type in ('lt', 'lte')
+                    elif lookup_type in ('startswith', 'contains', 'endswith', 'iexact',
+                                         'istartswith', 'icontains', 'iendswith'):
+                        submatch = False
+                    else:
+                        submatch = EMULATED_OPS[lookup_type](entity[column], value)
+                else:
+                    submatch = EMULATED_OPS[lookup_type](entity[column], value)
 
             if filters.connector == OR and submatch:
                 result = True
