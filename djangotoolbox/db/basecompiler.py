@@ -261,7 +261,7 @@ class NonrelCompiler(SQLCompiler):
             if value is NOT_PROVIDED:
                 value = field.get_default()
             if value is None and not field.null:
-                raise DatabaseError("Non-nullable field %s can't be None!" % field.name)
+                raise IntegrityError("Non-nullable field %s can't be None!" % field.name)
             value = self.convert_value_from_db(field.db_type(connection=self.connection), value)
             result.append(value)
         return result
@@ -362,7 +362,7 @@ class NonrelInsertCompiler(object):
         for (field, value), column in zip(self.query.values, self.query.columns):
             if field is not None:
                 if not field.null and value is None:
-                    raise DatabaseError("You can't set %s (a non-nullable "
+                    raise IntegrityError("You can't set %s (a non-nullable "
                                         "field) to None!" % field.name)
                 db_type = field.db_type(connection=self.connection)
                 value = self.convert_value_for_db(db_type, value)
