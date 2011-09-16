@@ -7,6 +7,8 @@ from django.utils.importlib import import_module
 __all__ = ('RawField', 'ListField', 'DictField', 'SetField',
            'BlobField', 'EmbeddedModelField')
 
+EMPTY_ITER = ()
+
 class _HandleAssignment(object):
     """
     A placeholder class that provides a way to set the attribute on the model.
@@ -41,7 +43,7 @@ class AbstractIterableField(models.Field):
         if item_field is None:
             item_field = RawField()
         self.item_field = item_field
-        default = kwargs.get('default', None if kwargs.get('null') else ())
+        default = kwargs.get('default', None if kwargs.get('null') else EMPTY_ITER)
         if default is not None and not callable(default):
             # ensure a new object is created every time the default is accessed
             kwargs['default'] = lambda: self._type(default)

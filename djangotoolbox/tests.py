@@ -194,9 +194,13 @@ class FilterTest(TestCase):
         self.assertNotEqual(dt, None)
         item.save()
         self.assertGreater(DictModel.objects.get().auto_now['a'], dt)
-        # This shouldn't raise an error becaues the default value is
-        # an empty dict
+        item.delete()
+
+        # Saving empty dicts shouldn't throw errors
         DictModel().save()
+        # Regression tests for djangoappengine issue #39
+        DictModel.add_to_class('new_dict_field', DictField())
+        DictModel.objects.get()
 
     @unittest.skip('Fails with GAE SDK, but passes on production')
     def test_Q_objects(self):
