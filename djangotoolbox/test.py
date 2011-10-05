@@ -1,13 +1,7 @@
-from .utils import object_list_to_table, equal_lists
+from .utils import object_list_to_table
 from django.test import TestCase
 from django.test.simple import DjangoTestSuiteRunner
 from django.utils.unittest import TextTestRunner
-import sys
-
-try:
-    from StringIO import StringIO
-except ImportError:
-    from cStringIO import StringIO
 
 class ModelTestCase(TestCase):
     """

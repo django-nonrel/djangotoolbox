@@ -1,5 +1,5 @@
 from django import http
-from django.template import Context, RequestContext, loader
+from django.template import RequestContext, loader
 
 def server_error(request, template_name='500.html'):
     """
