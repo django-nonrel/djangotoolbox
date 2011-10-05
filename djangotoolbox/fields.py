@@ -40,14 +40,18 @@ class AbstractIterableField(models.Field):
     appropriate data type.
     """
     def __init__(self, item_field=None, *args, **kwargs):
-        if item_field is None:
-            item_field = RawField()
-        self.item_field = item_field
         default = kwargs.get('default', None if kwargs.get('null') else EMPTY_ITER)
         if default is not None and not callable(default):
             # ensure a new object is created every time the default is accessed
             kwargs['default'] = lambda: self._type(default)
+
         super(AbstractIterableField, self).__init__(*args, **kwargs)
+
+        if item_field is None:
+            item_field = RawField()
+        elif callable(item_field):
+            item_field = item_field()
+        self.item_field = item_field
 
     def contribute_to_class(self, cls, name):
         self.item_field.model = cls

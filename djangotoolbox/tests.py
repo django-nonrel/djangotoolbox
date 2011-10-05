@@ -24,7 +24,7 @@ class Source(models.Model):
 class ListModel(models.Model):
     integer = models.IntegerField(primary_key=True)
     floating_point = models.FloatField()
-    names = ListField(models.CharField(max_length=500))
+    names = ListField(models.CharField)
     names_with_default = ListField(models.CharField(max_length=500), default=[])
     names_nullable = ListField(models.CharField(max_length=500), null=True)
 
@@ -39,7 +39,7 @@ class SetModel(models.Model):
 supports_dicts = getattr(connections['default'].features, 'supports_dicts', False)
 if supports_dicts:
     class DictModel(models.Model):
-        dictfield = DictField(models.IntegerField())
+        dictfield = DictField(models.IntegerField)
         dictfield_nullable = DictField(null=True)
         auto_now = DictField(models.DateTimeField(auto_now=True))
 
