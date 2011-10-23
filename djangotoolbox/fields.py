@@ -227,17 +227,16 @@ class EmbeddedModelField(models.Field):
         return 'DictField:RawField'
 
     def _set_model(self, model):
-        # EmbeddedModelFields are not contribute[d]_to_class if using within
-        # ListFields (and friends), so we can only know the model field is
-        # used in when the IterableField sets our 'model' attribute in its
-        # contribute_to_class method.
-        # We need to know the model to generate a valid key for the lookup.
+        # We need to know the model to generate a valid key for the lookup but
+        # EmbeddedModelFields are not contributed_to_class if used in ListFields
+        # (and friends), so we can only know the model when the ListField sets
+        # our 'model' attribute in its contribute_to_class method.
 
         if model is not None and isinstance(self.embedded_model, basestring):
             # The model argument passed to __init__ was a string, so we need
             # to make sure to resolve that string to the corresponding model
-            # class, similar to relation fields. We abuse some of the
-            # relation fields' code to do the lookup here:
+            # class, similar to relation fields. We abuse some of the relation
+            # fields' code to do the lookup here:
             def _resolve_lookup(self_, resolved_model, model):
                 self.embedded_model = resolved_model
             from django.db.models.fields.related import add_lazy_relation
