@@ -91,5 +91,23 @@ class FakeCursor(object):
         raise NotImplementedError('Cursors not supported')
 
 class NonrelDatabaseWrapper(BaseDatabaseWrapper):
+    # These fake operators are required for SQLQuery.as_sql() support.
+    operators = {
+        'exact': '= %s',
+        'iexact': '= UPPER(%s)',
+        'contains': 'LIKE %s',
+        'icontains': 'LIKE UPPER(%s)',
+        'regex': '~ %s',
+        'iregex': '~* %s',
+        'gt': '> %s',
+        'gte': '>= %s',
+        'lt': '< %s',
+        'lte': '<= %s',
+        'startswith': 'LIKE %s',
+        'endswith': 'LIKE %s',
+        'istartswith': 'LIKE UPPER(%s)',
+        'iendswith': 'LIKE UPPER(%s)',
+    }
+
     def _cursor(self):
         return FakeCursor()
