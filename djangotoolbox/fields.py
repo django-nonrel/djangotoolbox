@@ -285,12 +285,19 @@ class EmbeddedModelField(models.Field):
     def to_python(self, values):
         if not isinstance(values, dict):
             return values
+
         module, model = values.pop('_module', None), values.pop('_model', None)
-
-        # TODO/XXX: Workaround for old Python releases. Remove this someday.
-        # Let's make sure keys are instances of str
-        values = dict([(str(k), v) for k,v in values.items()])
-
         if module is not None:
-            return getattr(import_module(module), model)(**values)
-        return self.embedded_model(**values)
+            model = getattr(import_module(module), model)
+        else:
+            model = self.embedded_model
+
+        data = {}
+        for field in model._meta.fields:
+            try:
+                # TODO/XXX: str(...) is a workaround for old Python releases.
+                # Remove this someday.
+                data[str(field.attname)] = values[field.column]
+            except KeyError:
+                pass
+        return model(**data)

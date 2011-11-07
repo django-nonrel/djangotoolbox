@@ -53,7 +53,7 @@ if supports_dicts:
 
     class EmbeddedModel(models.Model):
         some_relation = models.ForeignKey(DictModel, null=True)
-        someint = models.IntegerField()
+        someint = models.IntegerField(db_column='custom')
         auto_now = models.DateTimeField(auto_now=True)
         auto_now_add = models.DateTimeField(auto_now_add=True)
 
