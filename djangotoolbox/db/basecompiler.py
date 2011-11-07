@@ -370,10 +370,33 @@ class NonrelInsertCompiler(object):
             data[column] = value
         return self.insert(data, return_id=return_id)
 
+    def insert(self, values, return_id):
+        """
+        :param values: The model object as a list of (column, value) pairs
+        :param return_id: Whether to return the id of the newly created entity
+        """
+        raise NotImplementedError
+
 class NonrelUpdateCompiler(object):
-    def execute_sql(self, result_type=MULTI):
-        # TODO: We don't yet support QuerySet.update() in Django-nonrel
-        raise NotImplementedError('No updates')
+    def execute_sql(self, result_type):
+        values = []
+        for field, _, value in self.query.values:
+            if hasattr(value, 'prepare_database_save'):
+                value = value.prepare_database_save(field)
+            else:
+                value = field.get_db_prep_save(value, connection=self.connection)
+            value = self.convert_value_for_db(
+                field.db_type(connection=self.connection),
+                value
+            )
+            values.append((field, value))
+        return self.update(values)
+
+    def update(self, values):
+        """
+        :param values: A list of (field, new-value) pairs
+        """
+        raise NotImplementedError
 
 class NonrelDeleteCompiler(object):
     def execute_sql(self, result_type=MULTI):
