@@ -246,8 +246,8 @@ class EmbeddedModelField(models.Field):
 
     model = property(lambda self:self._model, _set_model)
 
-    def pre_save(self, model_instance, add):
-        embedded_instance = super(EmbeddedModelField, self).pre_save(model_instance, add)
+    def pre_save(self, model_instance, _):
+        embedded_instance = getattr(model_instance, self.attname)
         if embedded_instance is None:
             return None, None
 
@@ -258,6 +258,7 @@ class EmbeddedModelField(models.Field):
 
         values = []
         for field in embedded_instance._meta.fields:
+            add = not embedded_instance._entity_exists
             value = field.pre_save(embedded_instance, add)
             if field.primary_key and value is None:
                 # exclude unset pks ({"id" : None})
