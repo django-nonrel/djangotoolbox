@@ -253,8 +253,8 @@ class EmbeddedModelField(models.Field):
 
         model = self.embedded_model or models.Model
         if not isinstance(embedded_instance, model):
-            raise TypeError("Expected instance of type %r, not %r" % (
-                            type(model), type(embedded_instance)))
+            raise TypeError("Expected instance of type %r, not %r"
+                            % (model, type(embedded_instance)))
 
         values = []
         for field in embedded_instance._meta.fields:

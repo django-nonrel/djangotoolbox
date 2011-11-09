@@ -261,12 +261,15 @@ class EmbeddedModelFieldTest(TestCase):
         self.assertGreater(instance.simple.auto_now, auto_now)
 
     def test_error_messages(self):
-        for kwargs in (
-            {'simple_untyped' : 42},
-            {'simple' : 42}
+        for kwargs, expected in (
+            ({'simple' : 42}, EmbeddedModel),
+            ({'simple_untyped' : 42}, models.Model),
+            ({'typed_list': [EmbeddedModel()]}, SetModel)
         ):
-            self.assertRaisesRegexp(TypeError, "Expected instance of type",
-                                    EmbeddedModelFieldModel(**kwargs).save)
+            self.assertRaisesRegexp(
+                TypeError, "Expected instance of type %r" % expected,
+                EmbeddedModelFieldModel(**kwargs).save
+            )
 
     def test_typed_listfield(self):
         EmbeddedModelFieldModel.objects.create(
