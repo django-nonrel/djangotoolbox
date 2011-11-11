@@ -203,7 +203,6 @@ class FilterTest(TestCase):
         DictModel.add_to_class('new_dict_field', DictField())
         DictModel.objects.get()
 
-    @unittest.skip('Fails with GAE SDK, but passes on production')
     def test_Q_objects(self):
         self.assertEquals([entity.names for entity in
             ListModel.objects.exclude(Q(names__lt='Sakura') | Q(names__gte='Sasuke'))],
