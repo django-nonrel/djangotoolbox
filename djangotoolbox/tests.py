@@ -235,6 +235,9 @@ class EmbeddedModelFieldTest(TestCase):
         """ Compares d1 and d2, ignoring microseconds """
         self.assertEqual(d1.replace(microsecond=0), d2.replace(microsecond=0))
 
+    def assertNotEqualDatetime(self, d1, d2):
+        self.assertNotEqual(d1.replace(microsecond=0), d2.replace(microsecond=0))
+
     def _simple_instance(self):
         EmbeddedModelFieldModel.objects.create(simple=EmbeddedModel(someint='5'))
         return EmbeddedModelFieldModel.objects.get()
@@ -252,22 +255,41 @@ class EmbeddedModelFieldTest(TestCase):
         instance = EmbeddedModelFieldModel.objects.get()
         self.assertEqual(instance.simple.id, instance.id)
 
-    def test_pre_save(self, field='simple'):
+    def _test_pre_save(self, instance, get_field):
         # Make sure field.pre_save is called for embedded objects
         from time import sleep
-        instance = EmbeddedModelFieldModel.objects.create(**{field: EmbeddedModel()})
-        auto_now = getattr(instance, field).auto_now
-        auto_now_add = getattr(instance, field).auto_now_add
+        instance.save()
+        auto_now = get_field(instance).auto_now
+        auto_now_add = get_field(instance).auto_now_add
         self.assertNotEqual(auto_now, None)
         self.assertNotEqual(auto_now_add, None)
+
+        sleep(1) # FIXME
         instance.save()
+        self.assertNotEqualDatetime(get_field(instance).auto_now,
+                                    get_field(instance).auto_now_add)
+
         instance = EmbeddedModelFieldModel.objects.get()
+        instance.save()
         # auto_now_add shouldn't have changed now, but auto_now should.
-        self.assertEqualDatetime(getattr(instance, field).auto_now_add, auto_now_add)
-        self.assertGreater(getattr(instance, field).auto_now, auto_now)
+        self.assertEqualDatetime(get_field(instance).auto_now_add, auto_now_add)
+        self.assertGreater(get_field(instance).auto_now, auto_now)
+
+    def test_pre_save(self):
+        obj = EmbeddedModelFieldModel(simple=EmbeddedModel())
+        self._test_pre_save(obj, lambda instance: instance.simple)
 
     def test_pre_save_untyped(self):
-        self.test_pre_save(field='simple_untyped')
+        obj = EmbeddedModelFieldModel(simple_untyped=EmbeddedModel())
+        self._test_pre_save(obj, lambda instance: instance.simple_untyped)
+
+    def test_pre_save_in_list(self):
+        obj = EmbeddedModelFieldModel(untyped_list=[EmbeddedModel()])
+        self._test_pre_save(obj, lambda instance: instance.untyped_list[0])
+
+    def test_pre_save_in_dict(self):
+        obj = EmbeddedModelFieldModel(untyped_dict={'a': EmbeddedModel()})
+        self._test_pre_save(obj, lambda instance: instance.untyped_dict['a'])
 
     def test_pre_save_list(self):
         # Also make sure auto_now{,add} works for embedded object *lists*.
@@ -338,9 +360,11 @@ class EmbeddedModelFieldTest(TestCase):
         self.assertNotIn('some_relation', simple.__dict__)
         self.assertIsInstance(simple.__dict__['some_relation_id'], type(obj.id))
         self.assertIsInstance(simple.some_relation, DictModel)
+
 EmbeddedModelFieldTest = unittest.skipIf(
     not supports_dicts, "Backend doesn't support dicts")(
     EmbeddedModelFieldTest)
+
 
 class SignalTest(TestCase):
     def test_post_save(self):
