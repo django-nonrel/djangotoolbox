@@ -323,10 +323,11 @@ class NonrelCompiler(SQLCompiler):
         return fields
 
     def _get_ordering(self):
+        opts = self.query.get_meta()
         if not self.query.default_ordering:
             ordering = self.query.order_by
         else:
-            ordering = self.query.order_by or self.query.get_meta().ordering
+            ordering = self.query.order_by or opts.ordering
         for order in ordering:
             if LOOKUP_SEP in order:
                 raise DatabaseError("Ordering can't span tables on non-relational backends (%s)" % order)
@@ -336,8 +337,8 @@ class NonrelCompiler(SQLCompiler):
             descending = order.startswith('-')
             field = order.lstrip('-')
             if field == 'pk':
-                field = self.query.get_meta().pk.column
-            yield (self.query.model._meta.get_field(field).column, descending)
+                field = opts.pk.name
+            yield (opts.get_field(field).column, descending)
 
 class NonrelInsertCompiler(object):
     def execute_sql(self, return_id=False):
