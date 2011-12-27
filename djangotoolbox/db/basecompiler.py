@@ -188,16 +188,10 @@ class NonrelQuery(object):
         return result
 
     def _order_in_memory(self, lhs, rhs):
-        for order in self.compiler._get_ordering():
-            if LOOKUP_SEP in order:
-                raise DatabaseError("JOINs in ordering not supported (%s)" % order)
-            if order == '?':
-                result = random.choice([1, 0, -1])
-            else:
-                column = order.lstrip('-')
-                result = cmp(lhs.get(column), rhs.get(column))
-                if order.startswith('-'):
-                    result *= -1
+        for column, descending in self.compiler._get_ordering():
+            result = cmp(lhs.get(column), rhs.get(column))
+            if descending:
+                result *= -1
             if result != 0:
                 return result
         return 0
@@ -333,29 +327,17 @@ class NonrelCompiler(SQLCompiler):
             ordering = self.query.order_by
         else:
             ordering = self.query.order_by or self.query.get_meta().ordering
-        result = []
         for order in ordering:
             if LOOKUP_SEP in order:
                 raise DatabaseError("Ordering can't span tables on non-relational backends (%s)" % order)
             if order == '?':
                 raise DatabaseError("Randomized ordering isn't supported by the backend")
-
             order = order.lstrip('+')
-
             descending = order.startswith('-')
-            name = order.lstrip('-')
-            if name == 'pk':
-                name = self.query.get_meta().pk.name
-                order = '-' + name if descending else name
-
-            if self.query.standard_ordering:
-                result.append(order)
-            else:
-                if descending:
-                    result.append(name)
-                else:
-                    result.append('-' + name)
-        return result
+            field = order.lstrip('-')
+            if field == 'pk':
+                field = self.query.get_meta().pk.column
+            yield (self.query.model._meta.get_field(field).column, descending)
 
 class NonrelInsertCompiler(object):
     def execute_sql(self, return_id=False):
