@@ -394,3 +394,20 @@ class SelectRelatedTest(TestCase):
         source = Source.objects.all().select_related('target')[0]
         self.assertEqual(source.target.pk, target.pk)
         self.assertEqual(source.target.index, target.index)
+
+class OrderByTest(TestCase):
+    def test_foreign_keys(self):
+        target1 = Target.objects.create(index=1)
+        target2 = Target.objects.create(index=2)
+        source1 = Source.objects.create(target=target1, index=3)
+        source2 = Source.objects.create(target=target2, index=4)
+        self.assertEqual(list(Source.objects.all().order_by('target')), [source1, source2])
+        self.assertEqual(list(Source.objects.all().order_by('-target')), [source2, source1])
+
+    def test_db_column(self):
+        class DBColumn(models.Model):
+            a = models.IntegerField(db_column='b')
+        model1 = DBColumn.objects.create(a=1)
+        model2 = DBColumn.objects.create(a=2)
+        self.assertEqual(list(DBColumn.objects.all().order_by('a')), [model1, model2])
+        self.assertEqual(list(DBColumn.objects.all().order_by('-a')), [model2, model1])
