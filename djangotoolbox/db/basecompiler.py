@@ -188,16 +188,10 @@ class NonrelQuery(object):
         return result
 
     def _order_in_memory(self, lhs, rhs):
-        for order in self.compiler._get_ordering():
-            if LOOKUP_SEP in order:
-                raise DatabaseError("JOINs in ordering not supported (%s)" % order)
-            if order == '?':
-                result = random.choice([1, 0, -1])
-            else:
-                column = order.lstrip('-')
-                result = cmp(lhs.get(column), rhs.get(column))
-                if order.startswith('-'):
-                    result *= -1
+        for column, descending in self.compiler._get_ordering():
+            result = cmp(lhs.get(column), rhs.get(column))
+            if descending:
+                result *= -1
             if result != 0:
                 return result
         return 0
@@ -329,33 +323,22 @@ class NonrelCompiler(SQLCompiler):
         return fields
 
     def _get_ordering(self):
+        opts = self.query.get_meta()
         if not self.query.default_ordering:
             ordering = self.query.order_by
         else:
-            ordering = self.query.order_by or self.query.get_meta().ordering
-        result = []
+            ordering = self.query.order_by or opts.ordering
         for order in ordering:
             if LOOKUP_SEP in order:
                 raise DatabaseError("Ordering can't span tables on non-relational backends (%s)" % order)
             if order == '?':
                 raise DatabaseError("Randomized ordering isn't supported by the backend")
-
             order = order.lstrip('+')
-
             descending = order.startswith('-')
-            name = order.lstrip('-')
-            if name == 'pk':
-                name = self.query.get_meta().pk.name
-                order = '-' + name if descending else name
-
-            if self.query.standard_ordering:
-                result.append(order)
-            else:
-                if descending:
-                    result.append(name)
-                else:
-                    result.append('-' + name)
-        return result
+            field = order.lstrip('-')
+            if field == 'pk':
+                field = opts.pk.name
+            yield (opts.get_field(field).column, descending)
 
 class NonrelInsertCompiler(object):
     def execute_sql(self, return_id=False):
