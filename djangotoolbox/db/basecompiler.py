@@ -338,6 +338,8 @@ class NonrelCompiler(SQLCompiler):
             field = order.lstrip('-')
             if field == 'pk':
                 field = opts.pk.name
+            if not self.query.standard_ordering:
+                descending = not descending
             yield (opts.get_field(field).column, descending)
 
 class NonrelInsertCompiler(object):

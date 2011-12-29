@@ -411,3 +411,11 @@ class OrderByTest(TestCase):
         model2 = DBColumn.objects.create(a=2)
         self.assertEqual(list(DBColumn.objects.all().order_by('a')), [model1, model2])
         self.assertEqual(list(DBColumn.objects.all().order_by('-a')), [model2, model1])
+
+    def test_reverse(self):
+        class DBColumn(models.Model):
+            a = models.IntegerField(db_column='b')
+        model1 = DBColumn.objects.create(a=1)
+        model2 = DBColumn.objects.create(a=2)
+        self.assertEqual(list(DBColumn.objects.all().order_by('a').reverse()), [model2, model1])
+        self.assertEqual(list(DBColumn.objects.all().order_by('-a').reverse()), [model1, model2])
