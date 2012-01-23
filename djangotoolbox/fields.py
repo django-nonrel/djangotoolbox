@@ -152,6 +152,13 @@ class SetField(AbstractIterableField):
     """
     _type = set
     db_type_prefix = 'SetField'
+    
+    def value_to_string(self, obj):
+        """
+        Custom method for serialization, as JSON doesn't support serializing sets.
+        """
+        value = self._get_val_from_obj(obj)
+        return list(value)
 
 class DictField(AbstractIterableField):
     """
