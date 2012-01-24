@@ -6,6 +6,7 @@ from django.db.utils import DatabaseError
 from django.dispatch.dispatcher import receiver
 from django.test import TestCase
 from django.utils import unittest
+from django.core import serializers
 
 def count_calls(func):
     def wrapper(*args, **kwargs):
@@ -35,6 +36,36 @@ class OrderedListModel(models.Model):
 
 class SetModel(models.Model):
     setfield = SetField(models.IntegerField())
+
+class SerializableSetModel(models.Model):    
+    setfield = SetField(models.IntegerField())
+    setcharfield = SetField(models.CharField(), null=True)
+
+class SerializationTest(TestCase):
+    names = ['foo','bar','baz','monkey']
+
+    def test_json_listfield(self):
+        for i in range(4):
+            ListModel(integer=i+1, names=SerializationTest.names[:i+1]).save()
+        objects = ListModel.objects.all()
+        serialized = serializers.serialize('json', objects)
+        deserialized = serializers.deserialize('json', serialized)
+        for m in deserialized:
+            integer = m.object.integer
+            names = m.object.names
+            self.assertEqual(names, SerializationTest.names[:integer])
+        
+    def test_json_setfield(self):
+        for i in range(4):
+            SerializableSetModel(setfield=set([i]), setcharfield=set(SerializationTest.names[:i+1])).save()
+        objects = SerializableSetModel.objects.all()
+        serialized = serializers.serialize('json', objects)
+        deserialized = serializers.deserialize('json', serialized)
+        for m in deserialized:
+            integer = m.object.setfield.pop()
+            names = m.object.setcharfield
+            self.assertEqual(names, set(SerializationTest.names[:integer+1]))
+        
 
 supports_dicts = getattr(connections['default'].features, 'supports_dicts', False)
 if supports_dicts:
