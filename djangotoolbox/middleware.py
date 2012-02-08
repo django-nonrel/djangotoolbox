@@ -2,13 +2,16 @@ from django.conf import settings
 from django.http import HttpResponseRedirect
 from django.utils.cache import patch_cache_control
 
+
 LOGIN_REQUIRED_PREFIXES = getattr(settings, 'LOGIN_REQUIRED_PREFIXES', ())
-NO_LOGIN_REQUIRED_PREFIXES = getattr(settings, 'NO_LOGIN_REQUIRED_PREFIXES', ())
+NO_LOGIN_REQUIRED_PREFIXES = getattr(settings,
+                                     'NO_LOGIN_REQUIRED_PREFIXES', ())
 
 ALLOWED_DOMAINS = getattr(settings, 'ALLOWED_DOMAINS', None)
 NON_REDIRECTED_PATHS = getattr(settings, 'NON_REDIRECTED_PATHS', ())
 NON_REDIRECTED_BASE_PATHS = tuple(path.rstrip('/') + '/'
                                   for path in NON_REDIRECTED_PATHS)
+
 
 class LoginRequiredMiddleware(object):
     """
@@ -16,6 +19,7 @@ class LoginRequiredMiddleware(object):
     LOGIN_REQURED_PREFIXES prefix. You can also specify
     NO_LOGIN_REQUIRED_PREFIXES which take precedence.
     """
+
     def process_request(self, request):
         for prefix in NO_LOGIN_REQUIRED_PREFIXES:
             if request.path.startswith(prefix):
@@ -27,12 +31,15 @@ class LoginRequiredMiddleware(object):
                 return redirect_to_login(request.get_full_path())
         return None
 
+
 class RedirectMiddleware(object):
     """
-    A static redirect middleware. Mostly useful for hosting providers that
-    automatically setup an alternative domain for your website. You might
-    not want anyone to access the site via those possibly well-known URLs.
+    A static redirect middleware. Mostly useful for hosting providers
+    that automatically setup an alternative domain for your website.
+    You might not want anyone to access the site via those possibly
+    well-known URLs.
     """
+
     def process_request(self, request):
         host = request.get_host().split(':')[0]
         # Turn off redirects when in debug mode, running unit tests, or
@@ -45,13 +52,16 @@ class RedirectMiddleware(object):
                 request.path.startswith(NON_REDIRECTED_BASE_PATHS)):
             return
         if host not in settings.ALLOWED_DOMAINS:
-            return HttpResponseRedirect('http://' + settings.ALLOWED_DOMAINS[0]
-                                        + request.path)
+            return HttpResponseRedirect(
+                'http://' + settings.ALLOWED_DOMAINS[0] + request.path)
+
 
 class NoHistoryCacheMiddleware(object):
     """
-    If user is authenticated we disable browser caching of pages in history.
+    If user is authenticated we disable browser caching of pages in
+    history.
     """
+
     def process_response(self, request, response):
         if 'Expires' not in response and \
                 'Cache-Control' not in response and \

@@ -1,5 +1,6 @@
 from django.db.backends.creation import BaseDatabaseCreation
 
+
 class NonrelDatabaseCreation(BaseDatabaseCreation):
     data_types = {
         'AutoField':         'integer',
@@ -32,8 +33,16 @@ class NonrelDatabaseCreation(BaseDatabaseCreation):
         'RawField':          'raw',
     }
 
-    def sql_create_model(self, *args, **kwargs):
+    def sql_create_model(self, model, style, known_models=set()):
+        """
+        Most NoSQL databases are mostly schema-less, no data
+        definitions are needed.
+        """
         return [], {}
 
-    def sql_indexes_for_model(self, *args, **kwargs):
+    def sql_indexes_for_model(self, model, style):
+        """
+        Creates all indexes needed for local (not inherited) fields of
+        a model.
+        """
         return []
