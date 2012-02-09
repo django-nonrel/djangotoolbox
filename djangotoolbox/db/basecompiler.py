@@ -76,7 +76,17 @@ class NonrelQuery(object):
     def order_by(self, ordering):
         raise NotImplementedError("Not implemented.")
 
-    def add_filter(self, column, lookup_type, negated, db_type, value):
+    def add_filter(self, field, lookup_type, negated, value):
+        """
+        Adds a single constraint to the query. Called by add_filters for
+        each constraint leaf in the WHERE tree built by Django.
+
+        :param field: Lookup field (instance of Field); field.column
+                      should be used for database keys
+        :param lookup_type: Lookup name (e.g. "startswith")
+        :param negated: Is the leaf negated
+        :param value: Lookup argument, such as a value to compare with
+        """
         raise NotImplementedError("Not implemented.")
 
     def add_filters(self, filters):
@@ -114,8 +124,8 @@ class NonrelQuery(object):
             if isinstance(child, Node):
                 self.add_filters(child)
                 continue
-            column, lookup_type, db_type, value = self._decode_child(child)
-            self.add_filter(column, lookup_type, self._negated, db_type, value)
+            field, lookup_type, value = self._decode_child(child)
+            self.add_filter(field, lookup_type, self._negated, value)
 
         if filters.negated:
             self._negated = not self._negated
@@ -135,13 +145,27 @@ class NonrelQuery(object):
         constraint, lookup_type, annotation, value = child
         packed, value = constraint.process(lookup_type, value, self.connection)
         alias, column, db_type = packed
-        if alias and alias != self.query.model._meta.db_table:
+        field = constraint.field
+
+        opts = self.query.model._meta
+        if alias and alias != opts.db_table:
             raise DatabaseError("This database doesn't support JOINs "
                                 "and multi-table inheritance.")
-        value = self._normalize_lookup_value(value, annotation, lookup_type)
-        return column, lookup_type, db_type, value
 
-    def _normalize_lookup_value(self, value, annotation, lookup_type):
+        # For parent.child_set queries the field held by the constraint
+        # is the parent's primary key, while the field the filter
+        # should consider is the child's foreign key field.
+        if column != field.column:
+            assert field.primary_key
+            field = (f for f in opts.fields if f.column == column).next()
+            assert field.rel is not None
+
+        value = self._normalize_lookup_value(
+            lookup_type, value, field, annotation)
+
+        return field, lookup_type, value
+
+    def _normalize_lookup_value(self, lookup_type, value, field, annotation):
         """
         Undoes preparations done by Field.get_db_prep_lookup not
         suitable for nonrel back-ends and calls value_for_db_* for
