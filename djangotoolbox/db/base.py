@@ -29,7 +29,6 @@ class NonrelDatabaseFeatures(BaseDatabaseFeatures):
     # specific to SQL-based databases.
     distinguishes_insert_from_update = False
 
-    string_based_auto_field = False
     supports_dicts = False
 
     def _supports_transactions(self):
@@ -70,14 +69,15 @@ class NonrelDatabaseOperations(BaseDatabaseOperations):
 
     def value_to_db_auto(self, value):
         """
-        Transform a value to an object compatible with the AutoField
-        required by the backend driver for auto columns.
+        Assuming that the database has its own key type, leaves any
+        conversions to the back-end.
+
+        Note that Django can pass a string representation of the value
+        instead of the value itself (after receiving it as a query
+        parameter for example), so you'll likely need to limit
+        your AutoFields in a way that makes str(value) reversible.
         """
-        if self.connection.features.string_based_auto_field:
-            if value is None:
-                return None
-            return unicode(value)
-        return super(NonrelDatabaseOperations, self).value_to_db_auto(value)
+        return value
 
     def value_to_db_date(self, value):
         """
