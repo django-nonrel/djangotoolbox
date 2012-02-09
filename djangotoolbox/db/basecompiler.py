@@ -2,7 +2,7 @@ import datetime
 import random
 
 from django.conf import settings
-from django.db.models.fields import NOT_PROVIDED
+from django.db.models.fields import NOT_PROVIDED, DecimalField
 from django.db.models.sql import aggregates as sqlaggregates
 from django.db.models.sql.compiler import SQLCompiler
 from django.db.models.sql.constants import LOOKUP_SEP, MULTI, SINGLE
@@ -142,6 +142,13 @@ class NonrelQuery(object):
         return column, lookup_type, db_type, value
 
     def _normalize_lookup_value(self, value, annotation, lookup_type):
+        """
+        Undoes preparations done by Field.get_db_prep_lookup not
+        suitable for nonrel back-ends and calls value_for_db_* for
+        standard fields that don't do it on their own for lookups.
+
+        TODO: Blank Field.get_db_prep_lookup instead?
+        """
 
         # Undo Field.get_db_prep_lookup putting most values in a list
         # (a subclass may override this, so check if it's a list).
@@ -171,6 +178,14 @@ class NonrelQuery(object):
             value = value[1:]
         elif lookup_type in ('contains', 'icontains'):
             value = value[1:-1]
+
+        # Workaround for Django only defining get_db_prep_save, not
+        # get_db_prep_value, causing value_to_db_decimal not to be
+        # applied for lookups.
+        # TODO: Should be removed this it changes.
+        if isinstance(field, DecimalField):
+            value = self.connection.ops.value_to_db_decimal(
+                field.to_python(value), field.max_digits, field.decimal_places)
 
         return value
 
