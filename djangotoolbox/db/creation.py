@@ -57,6 +57,28 @@ class NonrelDatabaseCreation(BaseDatabaseCreation):
         'BlobField':                  'bytes',
     }
 
+    def db_type(self, field):
+        """
+        Allows back-ends to override db_type determined by the field.
+
+        This has to be called instead of the Field.db_type, because we
+        may need to override a db_type a custom field returns directly,
+        and need more freedom in handling types of primary keys and
+        related fields.
+
+        :param field: A field we want to know the storage type of
+
+        TODO: Field.db_type (as of 1.3.1) is used mostly for generating
+              SQL statements (through a couple of methods in
+              DatabaseCreation and DatabaseOperations.field_cast_sql)
+              or within back-end implementations -- nonrel is not
+              dependend on any of these; but there are two cases that
+              might need to be fixed, namely:
+              -- management/createcachetable (calls field.db_type),
+              -- and contrib/gis (defines its own geo_db_type method).
+        """
+        return field.db_type(connection=self.connection)
+
     def sql_create_model(self, model, style, known_models=set()):
         """
         Most NoSQL databases are mostly schema-less, no data
