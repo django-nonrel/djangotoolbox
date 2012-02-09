@@ -332,6 +332,13 @@ class NonrelCompiler(SQLCompiler):
     # ----------------------------------------------
 
     def _make_result(self, entity, fields):
+        """
+        Decodes values for the given fields from the database entity.
+
+        The entity is assumed to be a dict using field database column
+        names as keys. Decodes values using value_from_db as well as
+        the standard convert_values.
+        """
         result = []
         for field in fields:
             value = entity.get(field.column, NOT_PROVIDED)
@@ -339,6 +346,8 @@ class NonrelCompiler(SQLCompiler):
                 value = field.get_default()
             else:
                 value = self.convert_value_from_db(field.db_type(connection=self.connection), value)
+                value = self.query.convert_values(value, field,
+                                                  self.connection)
             if value is None and not field.null:
                 raise IntegrityError("Non-nullable field %s can't be None!" %
                                      field.name)

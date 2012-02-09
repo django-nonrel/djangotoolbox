@@ -100,6 +100,13 @@ class NonrelDatabaseOperations(BaseDatabaseOperations):
         """
         return value
 
+    def value_to_db_decimal(self, value):
+        """
+        Does not do any conversion, assuming that a decimal can be
+        stored directly.
+        """
+        return value
+
     def year_lookup_bounds(self, value):
         """
         Converts year bounds to datetime bounds as these can likely be
@@ -109,6 +116,14 @@ class NonrelDatabaseOperations(BaseDatabaseOperations):
         """
         return [datetime.datetime(value, 1, 1, 0, 0, 0, 0),
                 datetime.datetime(value + 1, 1, 1, 0, 0, 0, 0)]
+
+    def convert_values(self, value, field):
+        """
+        Does no conversion, assuming that values returned by the
+        database are standard Python types suitable to be passed to
+        fields.
+        """
+        return value
 
     def check_aggregate_support(self, aggregate):
         """
