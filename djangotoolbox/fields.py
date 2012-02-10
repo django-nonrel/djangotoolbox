@@ -38,6 +38,11 @@ class RawField(models.Field):
     """
 
     def get_internal_type(self):
+        """
+        Returns this field's kind. Nonrel fields are meant to extend
+        the set of standard fields, so fields subclassing them should
+        get the same internal type, rather than their own class name.
+        """
         return 'RawField'
 
 
@@ -79,14 +84,6 @@ class AbstractIterableField(models.Field):
         item_metaclass = getattr(self.item_field, '__metaclass__', None)
         if issubclass(item_metaclass, models.SubfieldBase):
             setattr(cls, self.name, _HandleAssignment(self))
-
-    @property
-    def db_type_prefix(self):
-        return self.__class__.__name__
-
-    def db_type(self, connection):
-        item_db_type = self.item_field.db_type(connection=connection)
-        return '%s:%s' % (self.db_type_prefix, item_db_type)
 
     def _map(self, function, iterable, *args, **kwargs):
         """
@@ -174,7 +171,6 @@ class ListField(AbstractIterableField):
     sending them to the database.
     """
     _type = list
-    db_type_prefix = 'ListField'
 
     def __init__(self, *args, **kwargs):
         self.ordering = kwargs.pop('ordering', None)
@@ -182,6 +178,9 @@ class ListField(AbstractIterableField):
             raise TypeError("'ordering' has to be a callable or None, "
                             "not of type %r." % type(self.ordering))
         super(ListField, self).__init__(*args, **kwargs)
+
+    def get_internal_type(self):
+        return 'ListField'
 
     def pre_save(self, model_instance, add):
         value = getattr(model_instance, self.attname)
@@ -197,7 +196,9 @@ class SetField(AbstractIterableField):
     Field representing a Python ``set``.
     """
     _type = set
-    db_type_prefix = 'SetField'
+
+    def get_internal_type(self):
+        return 'SetField'
 
     def value_to_string(self, obj):
         """
@@ -216,7 +217,9 @@ class DictField(AbstractIterableField):
     back-end, keys that aren't strings might not be allowed.
     """
     _type = dict
-    db_type_prefix = 'DictField'
+
+    def get_internal_type(self):
+        return 'DictField'
 
     def _map(self, function, iterable, *args, **kwargs):
         if iterable is None:
@@ -249,8 +252,8 @@ class EmbeddedModelField(models.Field):
         kwargs.setdefault('default', None)
         super(EmbeddedModelField, self).__init__(*args, **kwargs)
 
-    def db_type(self, connection):
-        return 'DictField:RawField'
+    def get_internal_type(self):
+        return 'EmbeddedModelField'
 
     def _set_model(self, model):
         """
