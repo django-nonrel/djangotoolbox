@@ -283,6 +283,10 @@ class EmbeddedModelField(models.Field):
     model = property(lambda self: self._model, _set_model)
 
     def to_python(self, value):
+        """
+        Passes embedded model fields' values through embedded fields
+        to_python methods and reinstiatates the embedded instance.
+        """
         if not isinstance(value, dict):
             return value
 
@@ -293,14 +297,12 @@ class EmbeddedModelField(models.Field):
         else:
             embedded_model = self.embedded_model
 
-        attribute_values = {}
-        for field in embedded_model._meta.fields:
-            try:
-                # TODO: str(...) is a workaround for old Python
-                # releases. Remove this someday.
-                attribute_values[str(field.attname)] = value[field.column]
-            except KeyError:
-                pass
+        # Pass values through respective fields' to_python, leaving
+        # fields for which no value is specified uninitialized.
+        attribute_values = dict(
+            (field.attname, field.to_python(attribute_values[field.attname]))
+            for field in embedded_model._meta.fields
+            if field.attname in attribute_values)
 
         # Create the model instance.
         # Note: the double underline is not a typo -- this lets the
