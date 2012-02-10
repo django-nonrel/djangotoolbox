@@ -2,6 +2,7 @@
 
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.utils import IntegrityError
 from django.utils.importlib import import_module
 
 
@@ -282,20 +283,40 @@ class EmbeddedModelField(models.Field):
 
     model = property(lambda self: self._model, _set_model)
 
+    def model_for_data(self, data):
+        """
+        Returns the fixed embedded_model this field was initialized
+        with (typed embedding) or tries to determine the model from
+        _module / _model keys in the data (untyped embedding).
+
+        We give precedence to the field's definition model, as silently
+        using a differing serialized one could hide some data integrity
+        problems.
+
+        Note that a single untyped EmbeddedModelField may process
+        instances of different models (especially when used as a type
+        of a collection field).
+        """
+        module = data.pop('_module', None)
+        model = data.pop('_model', None)
+        if self.embedded_model is not None:
+            return self.embedded_model
+        elif module is not None:
+            return getattr(import_module(module), model)
+        else:
+            raise IntegrityError("Untyped EmbeddedModelField trying to load "
+                                 "data without serialized model class info.")
+
     def to_python(self, value):
         """
         Passes embedded model fields' values through embedded fields
         to_python methods and reinstiatates the embedded instance.
         """
-        if not isinstance(value, dict):
-            return value
-
-        module = value.pop('_module', None)
-        model = value.pop('_model', None)
-        if module is not None:
-            embedded_model = getattr(import_module(module), model)
+        if isinstance(value, dict):
+            embedded_model = self.model_for_data(value)
+            attribute_values = value
         else:
-            embedded_model = self.embedded_model
+            return value
 
         # Pass values through respective fields' to_python, leaving
         # fields for which no value is specified uninitialized.
