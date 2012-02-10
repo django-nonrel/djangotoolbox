@@ -495,24 +495,43 @@ class NonrelInsertCompiler(object):
     Base class for all compliers that create new entities or objects
     in the database. It has to define execute_sql method due to being
     used in place of a SQLInsertCompiler.
+
+    TODO: Analyze if it's always true that when field is None we should
+          use the PK from self.query (check if the column assertion
+          below ever fails).
     """
 
     def execute_sql(self, return_id=False):
-        data = {}
+        field_values = {}
+        pk = self.query.get_meta().pk
         for (field, value), column in zip(self.query.values,
                                           self.query.columns):
+
+            # Raise an exception for non-nullable fields without a value.
             if field is not None:
                 if not field.null and value is None:
                     raise IntegrityError("You can't set %s (a non-nullable "
                                          "field) to None!" % field.name)
-                db_type = field.db_type(connection=self.connection)
-                value = self.convert_value_for_db(db_type, value)
-            data[column] = value
-        return self.insert(data, return_id=return_id)
+
+            # Use the primary key field when our sql.Query provides a
+            # value without a field.
+            if field is None:
+                field = pk
+            assert field.column == column
+            assert field not in field_values
+
+            # Prepare value for database, note that query.values have
+            # already passed through get_db_prep_save.
+            db_type = field.db_type(connection=self.connection)
+            value = self.convert_value_for_db(db_type, value)
+
+            field_values[field] = value
+
+        return self.insert(field_values, return_id=return_id)
 
     def insert(self, values, return_id):
         """
-        :param values: The model object as a list of (column, value) pairs
+        :param values: The model object as a list of (field, value) pairs
         :param return_id: Whether to return the id of the newly created entity
         """
         raise NotImplementedError
