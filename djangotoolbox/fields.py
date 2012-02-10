@@ -253,30 +253,23 @@ class EmbeddedModelField(models.Field):
 
     model = property(lambda self:self._model, _set_model)
 
-    def pre_save(self, model_instance, _):
-        embedded_instance = getattr(model_instance, self.attname)
+    def get_db_prep_value(self, embedded_instance, **kwargs):
         if embedded_instance is None:
-            return None, None
-
+            return None
         model = self.embedded_model or models.Model
         if not isinstance(embedded_instance, model):
             raise TypeError("Expected instance of type %r, not %r"
                             % (model, type(embedded_instance)))
 
-        values = []
+        value_list = []
         for field in embedded_instance._meta.fields:
             add = not embedded_instance._entity_exists
             value = field.pre_save(embedded_instance, add)
             if field.primary_key and value is None:
                 # exclude unset pks ({"id" : None})
                 continue
-            values.append((field, value))
+            value_list.append((field, value))
 
-        return embedded_instance, values
-
-    def get_db_prep_value(self, (embedded_instance, value_list), **kwargs):
-        if value_list is None:
-            return None
         values = dict((field.column, field.get_db_prep_value(value, **kwargs))
                       for field, value in value_list)
         if self.embedded_model is None:

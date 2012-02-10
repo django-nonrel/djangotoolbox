@@ -391,6 +391,35 @@ class EmbeddedModelFieldTest(TestCase):
         self.assertIsInstance(simple.__dict__['some_relation_id'], type(obj.id))
         self.assertIsInstance(simple.some_relation, DictModel)
 
+    def test_update(self):
+        """
+        Test that update can be used on an a subset of objects
+        containing collections of embedded instances; see issue #13.
+        Also ensure that updated values are coerced according to
+        collection field.
+        """
+        class Child(models.Model):
+            pass
+        class Parent(models.Model):
+            id = models.IntegerField(primary_key=True)
+            integer_list = ListField(models.IntegerField)
+            integer_dict = DictField(models.IntegerField)
+            embedded_list = ListField(EmbeddedModelField(Child))
+            embedded_dict = DictField(EmbeddedModelField(Child))
+        child1 = Child.objects.create()
+        child2 = Child.objects.create()
+        parent = Parent.objects.create(pk=1,
+            integer_list=[1], integer_dict={'a': 2},
+            embedded_list=[child1], embedded_dict={'a': child2})
+        Parent.objects.filter(pk=1).update(
+            integer_list=['3'], integer_dict={'b': '3'},
+            embedded_list=[child2], embedded_dict={'b': child1})
+        parent = Parent.objects.get()
+        self.assertEqual(parent.integer_list, [3])
+        self.assertEqual(parent.integer_dict, {'b': 3})
+        self.assertEqual(parent.embedded_list, [child2])
+        self.assertEqual(parent.embedded_dict, {'b': child1})
+
 EmbeddedModelFieldTest = unittest.skipIf(
     not supports_dicts, "Backend doesn't support dicts")(
     EmbeddedModelFieldTest)
