@@ -46,7 +46,7 @@ class SerializationTest(TestCase):
 
     def test_json_listfield(self):
         for i in range(4):
-            ListModel(integer=i+1, names=SerializationTest.names[:i+1]).save()
+            ListModel(integer=i+1, floating_point=0, names=SerializationTest.names[:i+1]).save()
         objects = ListModel.objects.all()
         serialized = serializers.serialize('json', objects)
         deserialized = serializers.deserialize('json', serialized)
