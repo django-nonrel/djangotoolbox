@@ -305,6 +305,18 @@ class EmbeddedModelField(models.Field):
         return embedded_model(__entity_exists=True, **attribute_values)
 
     def get_db_prep_value(self, embedded_instance, **kwargs):
+        """
+        Applies pre_save and get_db_prep_value of embedded instance
+        fields and passes a field => value mapping down to database
+        type conversions.
+
+        The embedded instance will be saved as a column => value dict
+        in the end (possibly augmented with info about instance's model
+        for untyped embedding), but because we need to apply database
+        type conversions on embedded instance fields' values and for
+        these we need to know fields those values come from, we need to
+        entrust the database layer with creating the dict.
+        """
         if embedded_instance is None:
             return None
 
@@ -315,32 +327,40 @@ class EmbeddedModelField(models.Field):
             raise TypeError("Expected instance of type %r, not %r." %
                             (embedded_model, type(embedded_instance)))
 
-        field_values = []
+        # Apply pre_save and get_db_prep_value of embedded instance
+        # fields, create the field => value mapping to be passed to
+        # storage preprocessing.
+        field_values = {}
+        add = not embedded_instance._entity_exists
         for field in embedded_instance._meta.fields:
-            add = not embedded_instance._entity_exists
-            value = field.pre_save(embedded_instance, add)
+            value = field.get_db_prep_value(
+                field.pre_save(embedded_instance, add), **kwargs)
 
             # Exclude unset primary keys (e.g. {'id': None}).
             # TODO: Why?
             if field.primary_key and value is None:
                 continue
 
-            field_values.append((field, value))
+            field_values[field] = value
 
-        column_values = dict(
-            (field.column, field.get_db_prep_value(value, **kwargs))
-            for field, value in field_values)
-
+        # Let untyped fields store model info alongside values.
+        # We use fake RawFields for additional values to avoid passing
+        # embedded_instance to database conversions and to give
+        # back-ends a chance to apply generic conversions.
         if self.embedded_model is None:
-            column_values.update(
-                {'_module': embedded_instance.__class__.__module__,
-                 '_model': embedded_instance.__class__.__name__})
+            module_field = RawField()
+            module_field.set_attributes_from_name('_module')
+            model_field = RawField()
+            model_field.set_attributes_from_name('_model')
+            field_values.update(
+                ((module_field, embedded_instance.__class__.__module__),
+                 (model_field, embedded_instance.__class__.__name__)))
 
         # This instance will exist in the database soon.
         # TODO: Ensure that this doesn't cause race conditions.
         embedded_instance._entity_exists = True
 
-        return column_values
+        return field_values
 
     # TODO: Remove this once we have a cleaner solution.
     def get_db_prep_lookup(self, lookup_type, value, connection,
