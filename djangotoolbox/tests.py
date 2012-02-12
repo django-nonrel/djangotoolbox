@@ -1,5 +1,5 @@
 from django.core import serializers
-from django.db import connections, models
+from django.db import models
 from django.db.models import Q
 from django.db.models.signals import post_save
 from django.db.utils import DatabaseError
@@ -48,32 +48,28 @@ class SetModel(models.Model):
     setfield = SetField(models.IntegerField())
 
 
-supports_dicts = getattr(connections['default'].features, 'supports_dicts', False)
-
-if supports_dicts:
-
-    class DictModel(models.Model):
-        dictfield = DictField(models.IntegerField)
-        dictfield_nullable = DictField(null=True)
-        auto_now = DictField(models.DateTimeField(auto_now=True))
+class DictModel(models.Model):
+    dictfield = DictField(models.IntegerField)
+    dictfield_nullable = DictField(null=True)
+    auto_now = DictField(models.DateTimeField(auto_now=True))
 
 
-    class EmbeddedModelFieldModel(models.Model):
-        simple = EmbeddedModelField('EmbeddedModel', null=True)
-        simple_untyped = EmbeddedModelField(null=True)
-        typed_list = ListField(EmbeddedModelField('SetModel'))
-        typed_list2 = ListField(EmbeddedModelField('EmbeddedModel'))
-        untyped_list = ListField(EmbeddedModelField())
-        untyped_dict = DictField(EmbeddedModelField())
-        ordered_list = ListField(EmbeddedModelField(),
-                                 ordering=lambda obj: obj.index)
+class EmbeddedModelFieldModel(models.Model):
+    simple = EmbeddedModelField('EmbeddedModel', null=True)
+    simple_untyped = EmbeddedModelField(null=True)
+    typed_list = ListField(EmbeddedModelField('SetModel'))
+    typed_list2 = ListField(EmbeddedModelField('EmbeddedModel'))
+    untyped_list = ListField(EmbeddedModelField())
+    untyped_dict = DictField(EmbeddedModelField())
+    ordered_list = ListField(EmbeddedModelField(),
+                             ordering=lambda obj: obj.index)
 
 
-    class EmbeddedModel(models.Model):
-        some_relation = models.ForeignKey(DictModel, null=True)
-        someint = models.IntegerField(db_column='custom')
-        auto_now = models.DateTimeField(auto_now=True)
-        auto_now_add = models.DateTimeField(auto_now_add=True)
+class EmbeddedModel(models.Model):
+    some_relation = models.ForeignKey(DictModel, null=True)
+    someint = models.IntegerField(db_column='custom')
+    auto_now = models.DateTimeField(auto_now=True)
+    auto_now_add = models.DateTimeField(auto_now_add=True)
 
 
 class IterableFieldsTest(TestCase):
@@ -207,7 +203,6 @@ class IterableFieldsTest(TestCase):
         # an empty list.
         SetModel().save()
 
-    @unittest.skipIf(not supports_dicts, "Backend doesn't support dicts")
     def test_dictfield(self):
         DictModel(dictfield=dict(a=1, b='55', foo=3.14),
                   auto_now={'a': None}).save()
@@ -427,10 +422,6 @@ class EmbeddedModelFieldTest(TestCase):
         self.assertEqual(parent.integer_dict, {'b': 3})
         self.assertEqual(parent.embedded_list, [child2])
         self.assertEqual(parent.embedded_dict, {'b': child1})
-
-EmbeddedModelFieldTest = unittest.skipIf(
-    not supports_dicts, "Backend doesn't support dicts")(
-    EmbeddedModelFieldTest)
 
 
 class BaseModel(models.Model):

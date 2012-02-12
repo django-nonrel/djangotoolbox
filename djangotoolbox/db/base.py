@@ -31,8 +31,6 @@ class NonrelDatabaseFeatures(BaseDatabaseFeatures):
     # specific to SQL-based databases.
     distinguishes_insert_from_update = False
 
-    supports_dicts = False
-
     # Can primary_key be used on any field? Without encoding usually
     # only a limited set of types is acceptable for keys. This is a set
     # of all field kinds (internal_types) for which the primary_key
