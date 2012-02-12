@@ -559,12 +559,24 @@ class NonrelInsertCompiler(NonrelCompiler):
 
             field_values[field] = value
 
-        return self.insert(field_values, return_id=return_id)
+        key = self.insert(field_values, return_id=return_id)
+
+        # Pass the key value through normal database deconversion.
+        return self.ops.convert_values(self.value_from_db(key, pk), pk)
 
     def insert(self, values, return_id):
         """
-        :param values: The model object as a list of (field, value) pairs
-        :param return_id: Whether to return the id of the newly created entity
+        Creates a new entity to represent a model.
+
+        Note that the returned key will go through the same database
+        deconversions that every value coming from the database does
+        (convert_values and value_from_db).
+
+        :param values: The model object as a list of (field, value)
+                       pairs; each value is already prepared for the
+                       database
+        :param return_id: Whether to return the id or key of the newly
+                          created entity
         """
         raise NotImplementedError
 
