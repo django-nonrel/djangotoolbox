@@ -456,7 +456,7 @@ class NonrelDatabaseOperations(BaseDatabaseOperations):
             (subfield.column,
              self.value_for_db(subvalue, subfield,
                                subfield.get_internal_type(),
-                               self.creation.db_type(field), lookup))
+                               self._db_subtype(field, subfield), lookup))
             for subfield, subvalue in value.iteritems())
 
         # Cast to a dict, interleave columns with values on a list,
@@ -499,10 +499,23 @@ class NonrelDatabaseOperations(BaseDatabaseOperations):
             (subfield.attname, self.value_from_db(
                 value[subfield.column], subfield,
                 subfield.get_internal_type(),
-                self.creation.db_type(field)))
+                self._db_subtype(field, subfield)))
             for subfield in embedded_model._meta.fields
             if subfield.column in value)
 
+    def _db_subtype(self, field, subfield):
+        """
+        Use RawField db_type for converting values of embedded instance
+        fields when LegacyEmbeddedModelField is used.
+
+        TODO: This is only needed for backwards compatibility, for
+              current EmbeddedModelFields creation.db_type(subfield)
+              could be used.
+        """
+        from ..fields import RawField, LegacyEmbeddedModelField
+        if isinstance(field, LegacyEmbeddedModelField):
+            subfield = RawField()
+        return self.connection.creation.db_type(subfield)
 
     def value_for_db_key(self, value, field_kind):
         """
