@@ -479,3 +479,56 @@ class OrderByTest(TestCase):
         model2 = DBColumn.objects.create(a=2)
         self.assertEqual(list(DBColumn.objects.all().order_by('a').reverse()), [model2, model1])
         self.assertEqual(list(DBColumn.objects.all().order_by('-a').reverse()), [model1, model2])
+
+
+class InstanceAsForeignKeyTest(TestCase):
+    """
+    We find it natural to use model instances instead of foreign keys
+    in some circumstances.
+
+    TODO: Add tests for DictField / EmbeddedModelField.
+    """
+    @unittest.skip('Wrong exception raised on Mongo; not highly significant')
+    def test_primary_key(self):
+        """Is it OK to use instance where a primary key is expected?"""
+        class Model(models.Model):
+            pass
+        model = Model.objects.create()
+        with self.assertRaises(TypeError):
+            Model.objects.get(pk=model)
+
+    def test_foreign_key(self):
+        """Django hides foreign keys from the user."""
+        class SingleParent(models.Model):
+            pass
+        class SingleChild(models.Model):
+            parent = models.ForeignKey(SingleParent)
+        parent = SingleParent.objects.create()
+        child = SingleChild.objects.create(parent=parent)
+        self.assertEqual(child.parent, parent)
+        self.assertEqual(SingleChild.objects.get(parent=parent), child)
+        self.assertEqual(SingleChild.objects.get(parent=parent).parent, parent)
+        self.assertEqual(len(SingleChild.objects.filter(parent=parent)), 1)
+
+    def test_list_with_foreignkeys(self):
+        """
+        Foreign keys in collections or in embedded models should also
+        be used just like models they point to in user-level code.
+
+        TODO: The model-to-key part is easy (something like _pk_trace
+              in related.py in ListField or one of conversion methods).
+              However, some research is needed on using key fetched
+              from a list in the database as a model (a custom related
+              manager will be necessary?).
+        """
+        class MultiParent(models.Model):
+            pass
+        class MultiChild(models.Model):
+            parents = ListField(models.ForeignKey(MultiParent))
+        parent1 = MultiParent.objects.create()
+        parent2 = MultiParent.objects.create()
+        child = MultiChild.objects.create(parents=[parent1, parent2])
+        self.assertEqual(child.parents, [parent1, parent2])
+        self.assertEqual(MultiChild.objects.get(parents=parent1), child)
+        self.assertEqual(MultiChild.objects.get(parent=parent).parents, [parent1, parent2])
+        self.assertEqual(len(MultiChild.objects.filter(parents=parent1)), 1)
