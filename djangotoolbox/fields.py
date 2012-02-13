@@ -311,8 +311,18 @@ class EmbeddedModelField(models.Field):
         """
         Passes embedded model fields' values through embedded fields
         to_python methods and reinstiatates the embedded instance.
+
+        We expect to receive a field.attname => value dict together
+        with a model class from back-end database deconversion (which
+        needs to know fields of the model beforehand).
         """
-        if isinstance(value, dict):
+
+        # Either the model class has already been determined during
+        # deconverting values from the database or we've got a dict
+        # from a deserializer that may contain model class info.
+        if isinstance(value, tuple):
+            embedded_model, attribute_values = value
+        elif isinstance(value, dict):
             embedded_model = self.model_for_data(value)
             attribute_values = value
         else:

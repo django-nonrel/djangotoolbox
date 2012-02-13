@@ -189,11 +189,6 @@ class NonrelQuery(object):
             else:
                 value = value[0]
 
-        if isinstance(value, unicode):
-            value = unicode(value)
-        elif isinstance(value, str):
-            value = str(value)
-
         # Remove percents added by Field.get_db_prep_lookup (useful
         # if one were to use the value in a LIKE expression).
         if lookup_type in ('startswith', 'istartswith'):
@@ -307,12 +302,6 @@ class NonrelQuery(object):
                 return result
         return 0
 
-    def convert_value_from_db(self, db_type, value):
-        return self.compiler.convert_value_from_db(db_type, value)
-
-    def convert_value_for_db(self, db_type, value):
-        return self.compiler.convert_value_for_db(db_type, value)
-
 
 class NonrelCompiler(SQLCompiler):
     """
@@ -323,6 +312,16 @@ class NonrelCompiler(SQLCompiler):
 
     TODO: Separate FetchCompiler from the abstract NonrelCompiler.
     """
+
+    def __init__(self, query, connection, using):
+        """
+        Initializes SQLComplier for the given query and connection and
+        saves references to connections's DatabaseCreation/Operations
+        for quick access in conversion wrappers.
+        """
+        super(NonrelCompiler, self).__init__(query, connection, using)
+        self.creation = self.connection.creation
+        self.ops = self.connection.ops
 
     # ----------------------------------------------
     # Public API
@@ -384,7 +383,7 @@ class NonrelCompiler(SQLCompiler):
             if value is NOT_PROVIDED:
                 value = field.get_default()
             else:
-                value = self.convert_value_from_db(field.db_type(connection=self.connection), value)
+                value = self.value_from_db(value, field)
                 value = self.query.convert_values(value, field,
                                                   self.connection)
             if value is None and not field.null:
@@ -489,8 +488,42 @@ class NonrelCompiler(SQLCompiler):
                 descending = not descending
             yield (opts.get_field(field).column, descending)
 
+    def value_for_db(self, value, field, lookup=False):
+        """
+        Does type-conversions needed before storing a value in the
+        the database or using it as a filter parameter.
 
-class NonrelInsertCompiler(object):
+        This is a convience wrapper that only precomputes field's kind
+        and a db_type for it and calls DatabaseOperations method to do
+        the real work; you should typically extend the operations class
+        method, but only call this one.
+
+        Note that compilers may do conversions without building a
+        NonrelQuery, thus we need to define this method here rather
+        than on the query class.
+
+        :param value: A value to be passed to the database driver
+        :param field: A field the value comes from
+        :param lookup: Is the value being prepared as a filter
+                       parameter or for storage
+        """
+        return self.ops.value_for_db(value, field,
+            field.get_internal_type(),
+            self.creation.db_type(field), lookup)
+
+    def value_from_db(self, value, field):
+        """
+        Performs deconversions defined by back-end's DatabaseOperations.
+
+        :param value: A value received from the database client
+        :param field: A field the value is meant for
+        """
+        return self.ops.value_from_db(value, field,
+            field.get_internal_type(),
+            self.creation.db_type(field))
+
+
+class NonrelInsertCompiler(NonrelCompiler):
     """
     Base class for all compliers that create new entities or objects
     in the database. It has to define execute_sql method due to being
@@ -522,8 +555,7 @@ class NonrelInsertCompiler(object):
 
             # Prepare value for database, note that query.values have
             # already passed through get_db_prep_save.
-            db_type = field.db_type(connection=self.connection)
-            value = self.convert_value_for_db(db_type, value)
+            value = self.value_for_db(value, field)
 
             field_values[field] = value
 
@@ -537,7 +569,7 @@ class NonrelInsertCompiler(object):
         raise NotImplementedError
 
 
-class NonrelUpdateCompiler(object):
+class NonrelUpdateCompiler(NonrelCompiler):
 
     def execute_sql(self, result_type):
         values = []
@@ -547,9 +579,7 @@ class NonrelUpdateCompiler(object):
             else:
                 value = field.get_db_prep_save(value,
                                                connection=self.connection)
-            value = self.convert_value_for_db(
-                field.db_type(connection=self.connection),
-                value)
+            value = self.value_for_db(value, field)
             values.append((field, value))
         return self.update(values)
 
@@ -562,7 +592,7 @@ class NonrelUpdateCompiler(object):
         raise NotImplementedError
 
 
-class NonrelDeleteCompiler(object):
+class NonrelDeleteCompiler(NonrelCompiler):
 
     def execute_sql(self, result_type=MULTI):
         self.build_query([self.query.get_meta().pk]).delete()

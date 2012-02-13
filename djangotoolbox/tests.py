@@ -232,6 +232,33 @@ class IterableFieldsTest(TestCase):
                 exclude(Q(names__lt='Sakura') | Q(names__gte='Sasuke'))],
             [['Kakashi', 'Naruto', 'Sasuke', 'Sakura']])
 
+    def test_list_with_foreignkeys(self):
+
+        class Model(models.Model):
+            pass
+
+        class ReferenceList(models.Model):
+            keys = ListField(models.ForeignKey(Model))
+
+        model1 = Model.objects.create()
+        model2 = Model.objects.create()
+        rl = ReferenceList.objects.create(keys=[model1.pk, model2.pk])
+        self.assertEqual(ReferenceList.objects.get().keys[0], model1.pk)
+        self.assertEqual(len(ReferenceList.objects.filter(keys=model1.pk)), 1)
+
+    @unittest.expectedFailure
+    def test_nested_list(self):
+        """
+        Some back-ends expect lists to be strongly typed or not contain
+        other lists (e.g. GAE), this limits how the ListField can be
+        used (unless the back-end were to serialize all lists).
+        """
+
+        class UntypedListModel(models.Model):
+            untyped_list = ListField()
+
+        UntypedListModel.objects.create(untyped_list=[1, [2, 3]])
+
 
 class Child(models.Model):
     pass
@@ -543,3 +570,75 @@ class SerializationTest(TestCase):
             integer = m.object.setfield.pop()
             names = m.object.setcharfield
             self.assertEqual(names, set(SerializationTest.names[:integer + 1]))
+
+
+class String(models.Model):
+    s = models.CharField(max_length=20)
+
+
+class LazyObjectsTest(TestCase):
+
+    def test_translation(self):
+        """
+        Using a lazy translation call should work just the same as
+        a non-lazy one (or a plain string).
+        """
+        from django.utils.translation import ugettext_lazy
+
+        a = String.objects.create(s='a')
+        b = String.objects.create(s=ugettext_lazy('b'))
+
+        self.assertEqual(String.objects.get(s='a'), a)
+        self.assertEqual(list(String.objects.filter(s='a')), [a])
+        self.assertEqual(list(String.objects.filter(s__lte='a')), [a])
+        self.assertEqual(String.objects.get(s=ugettext_lazy('a')), a)
+        self.assertEqual(
+            list(String.objects.filter(s__lte=ugettext_lazy('a'))), [a])
+
+        self.assertEqual(String.objects.get(s='b'), b)
+        self.assertEqual(list(String.objects.filter(s='b')), [b])
+        self.assertEqual(list(String.objects.filter(s__gte='b')), [b])
+        self.assertEqual(String.objects.get(s=ugettext_lazy('b')), b)
+        self.assertEqual(
+            list(String.objects.filter(s__gte=ugettext_lazy('b'))), [b])
+
+    def test_marked_strings(self):
+        """
+        Check that strings marked as safe or needing escaping do not
+        confuse the back-end.
+        """
+        from django.utils.safestring import mark_safe, mark_for_escaping
+
+        a = String.objects.create(s='a')
+        b = String.objects.create(s=mark_safe('b'))
+        c = String.objects.create(s=mark_for_escaping('c'))
+
+        self.assertEqual(String.objects.get(s='a'), a)
+        self.assertEqual(list(String.objects.filter(s__startswith='a')), [a])
+        self.assertEqual(String.objects.get(s=mark_safe('a')), a)
+        self.assertEqual(
+            list(String.objects.filter(s__startswith=mark_safe('a'))), [a])
+        self.assertEqual(String.objects.get(s=mark_for_escaping('a')), a)
+        self.assertEqual(
+            list(String.objects.filter(s__startswith=mark_for_escaping('a'))),
+            [a])
+
+        self.assertEqual(String.objects.get(s='b'), b)
+        self.assertEqual(list(String.objects.filter(s__startswith='b')), [b])
+        self.assertEqual(String.objects.get(s=mark_safe('b')), b)
+        self.assertEqual(
+            list(String.objects.filter(s__startswith=mark_safe('b'))), [b])
+        self.assertEqual(String.objects.get(s=mark_for_escaping('b')), b)
+        self.assertEqual(
+            list(String.objects.filter(s__startswith=mark_for_escaping('b'))),
+            [b])
+
+        self.assertEqual(String.objects.get(s='c'), c)
+        self.assertEqual(list(String.objects.filter(s__startswith='c')), [c])
+        self.assertEqual(String.objects.get(s=mark_safe('c')), c)
+        self.assertEqual(
+            list(String.objects.filter(s__startswith=mark_safe('c'))), [c])
+        self.assertEqual(String.objects.get(s=mark_for_escaping('c')), c)
+        self.assertEqual(
+            list(String.objects.filter(s__startswith=mark_for_escaping('c'))),
+            [c])

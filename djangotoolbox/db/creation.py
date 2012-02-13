@@ -47,6 +47,23 @@ class NonrelDatabaseCreation(BaseDatabaseCreation):
         'URLField':                   'string',
         'XMLField':                   'string',
 
+        # You may use "list" for SetField, or even DictField and
+        # EmbeddedModelField (if your database supports nested lists).
+        # All following fields also support "string" and "bytes" as
+        # their storage types -- which work by serializing using pickle
+        # protocol 0 or 2 respectively.
+        # Please note that if you can't support the "natural" storage
+        # type then the order of field values will be undetermined, and
+        # lookups or filters may not work as specified (e.g. the same
+        # set or dict may be represented by different lists, with
+        # elements in different order, so the same two instances may
+        # compare one way or the other).
+        'AbstractIterableField':      'list',
+        'ListField':                  'list',
+        'SetField':                   'set',
+        'DictField':                  'dict',
+        'EmbeddedModelField':         'dict',
+
         # RawFields ("raw" db_type) are used when type is not known
         # (untyped collections) or for values that do not come from
         # a field at all (model info serialization), only do generic
