@@ -2,6 +2,7 @@
 
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models.fields.subclassing import Creator
 from django.db.utils import IntegrityError
 from django.utils.importlib import import_module
 
@@ -13,23 +14,15 @@ __all__ = ('RawField', 'ListField', 'SetField', 'DictField',
 EMPTY_ITER = ()
 
 
-class _HandleAssignment(object):
+class _FakeModel(object):
     """
-    Descriptor class that passes field values assigned to an instance
-    of model containing the field through field's to_python method.
-
-    A copy of subclassing.Creator.
+    An object of this class can pass itself off as a model instance
+    when used as an arguments to Field.pre_save method (item_fields
+    of iterable fields are not actually fields of any model).
     """
-    def __init__(self, field):
-        self.field = field
 
-    def __get__(self, obj, type=None):
-        if obj is None:
-            raise AttributeError("Can only be accessed via an instance.")
-        return obj.__dict__[self.field.name]
-
-    def __set__(self, obj, value):
-        obj.__dict__[self.field.name] = self.field.to_python(value)
+    def __init__(self, field, value):
+        setattr(self, field.attname, value)
 
 
 class RawField(models.Field):
@@ -76,6 +69,11 @@ class AbstractIterableField(models.Field):
             item_field = item_field()
         self.item_field = item_field
 
+        # We'll be pretending that item_field is a field of a model
+        # with just one "value" field.
+        assert not hasattr(self.item_field, 'attname')
+        self.item_field.set_attributes_from_name('value')
+
     def contribute_to_class(self, cls, name):
         self.item_field.model = cls
         self.item_field.name = name
@@ -84,7 +82,7 @@ class AbstractIterableField(models.Field):
         # If items' field uses SubfieldBase we also need to.
         item_metaclass = getattr(self.item_field, '__metaclass__', None)
         if issubclass(item_metaclass, models.SubfieldBase):
-            setattr(cls, self.name, _HandleAssignment(self))
+            setattr(cls, self.name, Creator(self))
 
     def _map(self, function, iterable, *args, **kwargs):
         """
@@ -93,15 +91,15 @@ class AbstractIterableField(models.Field):
 
         Overriden by DictField to only apply the function to values.
         """
-        if isinstance(iterable, (list, tuple, set)):
-            return self._type(function(element, *args, **kwargs)
-                              for element in iterable)
-        return iterable
+        return self._type(function(element, *args, **kwargs)
+                          for element in iterable)
 
     def to_python(self, value):
         """
         Passes value items through item_field's to_python.
         """
+        if value is None:
+            return None
         return self._map(self.item_field.to_python, value)
 
     def pre_save(self, model_instance, add):
@@ -109,29 +107,20 @@ class AbstractIterableField(models.Field):
         Gets our value from the model_instance and passes its items
         through item_field's pre_save (using a fake model instance).
         """
-        class fake_instance(object):
-            pass
-        fake_instance = fake_instance()
-
-        def wrapper(value):
-            assert not hasattr(self.item_field, 'attname')
-            fake_instance.value = value
-            self.item_field.attname = 'value'
-            try:
-                return self.item_field.pre_save(fake_instance, add)
-            finally:
-                del self.item_field.attname
-
-        return self._map(wrapper, getattr(model_instance, self.attname))
-
-    def get_db_prep_value(self, value, connection, prepared=False):
-        return self._map(self.item_field.get_db_prep_value, value,
-                         connection=connection, prepared=prepared)
+        value = getattr(model_instance, self.attname)
+        if value is None:
+            return None
+        return self._map(
+            lambda item: self.item_field.pre_save(
+                _FakeModel(self.item_field, item), add),
+            value)
 
     def get_db_prep_save(self, value, connection):
         """
         Applies get_db_prep_save of item_field on value items.
         """
+        if value is None:
+            return None
         return self._map(self.item_field.get_db_prep_save, value,
                          connection=connection)
 
@@ -223,10 +212,8 @@ class DictField(AbstractIterableField):
         return 'DictField'
 
     def _map(self, function, iterable, *args, **kwargs):
-        if iterable is None:
-            return None
-        return dict((key, function(value, *args, **kwargs))
-                    for key, value in iterable.iteritems())
+        return self._type((key, function(value, *args, **kwargs))
+                          for key, value in iterable.iteritems())
 
     def validate(self, values, model_instance):
         if not isinstance(values, dict):
@@ -340,9 +327,9 @@ class EmbeddedModelField(models.Field):
         # model know that the object already exists in the database.
         return embedded_model(__entity_exists=True, **attribute_values)
 
-    def get_db_prep_value(self, embedded_instance, **kwargs):
+    def get_db_prep_save(self, embedded_instance, connection):
         """
-        Applies pre_save and get_db_prep_value of embedded instance
+        Applies pre_save and get_db_prep_save of embedded instance
         fields and passes a field => value mapping down to database
         type conversions.
 
@@ -363,14 +350,14 @@ class EmbeddedModelField(models.Field):
             raise TypeError("Expected instance of type %r, not %r." %
                             (embedded_model, type(embedded_instance)))
 
-        # Apply pre_save and get_db_prep_value of embedded instance
+        # Apply pre_save and get_db_prep_save of embedded instance
         # fields, create the field => value mapping to be passed to
         # storage preprocessing.
         field_values = {}
         add = not embedded_instance._entity_exists
         for field in embedded_instance._meta.fields:
-            value = field.get_db_prep_value(
-                field.pre_save(embedded_instance, add), **kwargs)
+            value = field.get_db_prep_save(
+                field.pre_save(embedded_instance, add), connection=connection)
 
             # Exclude unset primary keys (e.g. {'id': None}).
             # TODO: Why?
@@ -431,7 +418,7 @@ class BlobField(models.Field):
         defaults.update(kwargs)
         return super(BlobField, self).formfield(**defaults)
 
-    def get_db_prep_value(self, value, connection, prepared=False):
+    def get_db_prep_save(self, value, connection):
         if hasattr(value, 'read'):
             return value.read()
         else:
