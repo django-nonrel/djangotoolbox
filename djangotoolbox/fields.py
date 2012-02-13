@@ -59,7 +59,8 @@ class AbstractIterableField(models.Field):
         super(AbstractIterableField, self).contribute_to_class(cls, name)
 
         metaclass = getattr(self.item_field, '__metaclass__', None)
-        if issubclass(metaclass, models.SubfieldBase):
+        if issubclass(metaclass, models.SubfieldBase) or \
+           self.item_field.rel is not None:
             setattr(cls, self.name, _HandleAssignment(self))
 
     @property
@@ -76,6 +77,10 @@ class AbstractIterableField(models.Field):
         return values
 
     def to_python(self, value):
+        if value is None:
+            return None
+        value = type(value)(item.pk if isinstance(item, models.Model) else item
+                            for item in value)
         return self._convert(self.item_field.to_python, value)
 
     def pre_save(self, model_instance, add):
@@ -171,6 +176,14 @@ class DictField(AbstractIterableField):
     """
     _type = dict
     db_type_prefix = 'DictField'
+
+    def to_python(self, values):
+        if values is None:
+            return None
+        values = dict(
+            (key, value.pk if isinstance(value, models.Model) else value)
+            for key, value in values.iteritems())
+        return self._convert(self.item_field.to_python, values)
 
     def _convert(self, func, values, *args, **kwargs):
         if values is None:
