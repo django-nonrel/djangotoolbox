@@ -1,9 +1,13 @@
 import cPickle as pickle
 import datetime
 
-from django.db.backends import BaseDatabaseFeatures, BaseDatabaseOperations, \
-    BaseDatabaseWrapper, BaseDatabaseClient, BaseDatabaseValidation, \
-    BaseDatabaseIntrospection
+from django.db.backends import (
+    BaseDatabaseFeatures,
+    BaseDatabaseOperations,
+    BaseDatabaseWrapper,
+    BaseDatabaseClient,
+    BaseDatabaseValidation,
+    BaseDatabaseIntrospection)
 from django.db.utils import DatabaseError
 from django.utils.functional import Promise
 from django.utils.safestring import EscapeString, EscapeUnicode, SafeString, \

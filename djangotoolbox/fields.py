@@ -130,8 +130,8 @@ class AbstractIterableField(models.Field):
         Passes the value through get_db_prep_lookup of item_field.
         """
 
-        # TODO: Remove as_lookup_value() once we have a cleaner solution
-        # for dot-notation queries.
+        # TODO/XXX: Remove as_lookup_value() once we have a cleaner
+        # solution for dot-notation queries.
         # See: https://groups.google.com/group/django-non-relational/browse_thread/thread/6056f8384c9caf04/89eeb9fb22ad16f3).
         if hasattr(value, 'as_lookup_value'):
             value = value.as_lookup_value(self, lookup_type, connection)
@@ -360,7 +360,6 @@ class EmbeddedModelField(models.Field):
                 field.pre_save(embedded_instance, add), connection=connection)
 
             # Exclude unset primary keys (e.g. {'id': None}).
-            # TODO: Why?
             if field.primary_key and value is None:
                 continue
 
@@ -380,12 +379,12 @@ class EmbeddedModelField(models.Field):
                  (model_field, embedded_instance.__class__.__name__)))
 
         # This instance will exist in the database soon.
-        # TODO: Ensure that this doesn't cause race conditions.
+        # TODO.XXX: Ensure that this doesn't cause race conditions.
         embedded_instance._entity_exists = True
 
         return field_values
 
-    # TODO: Remove this once we have a cleaner solution.
+    # TODO/XXX: Remove this once we have a cleaner solution.
     def get_db_prep_lookup(self, lookup_type, value, connection,
                            prepared=False):
         if hasattr(value, 'as_lookup_value'):
