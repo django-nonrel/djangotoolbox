@@ -120,6 +120,10 @@ class NonrelDatabaseOperations(BaseDatabaseOperations):
         Assuming that the database has its own key type, leaves any
         conversions to the back-end.
 
+        This method is added my nonrel to allow various types to be
+        used for automatic primary keys. `AutoField.get_db_prep_value`
+        calls it to prepare field's value for the database.
+
         Note that Django can pass a string representation of the value
         instead of the value itself (after receiving it as a query
         parameter for example), so you'll likely need to limit
@@ -129,29 +133,29 @@ class NonrelDatabaseOperations(BaseDatabaseOperations):
 
     def value_to_db_date(self, value):
         """
-        Does not do any conversion, assuming that a date can be stored
-        directly.
+        Unlike with SQL database clients, it's better to assume that
+        a date can be stored directly.
         """
         return value
 
     def value_to_db_datetime(self, value):
         """
-        Does not do any conversion, assuming that a datetime can be
-        stored directly.
+        We may pass a datetime object to a database driver without
+        casting it to a string.
         """
         return value
 
     def value_to_db_time(self, value):
         """
-        Does not do any conversion, assuming that a time can be stored
-        directly.
+        Unlike with SQL database clients, we may assume that a time can
+        be stored directly.
         """
         return value
 
-    def value_to_db_decimal(self, value):
+    def value_to_db_decimal(self, value, max_digits, decimal_places):
         """
-        Does not do any conversion, assuming that a decimal can be
-        stored directly.
+        We may assume that a decimal can be passed to a NoSQL database
+        driver directly.
         """
         return value
 
@@ -167,9 +171,8 @@ class NonrelDatabaseOperations(BaseDatabaseOperations):
 
     def convert_values(self, value, field):
         """
-        Does no conversion, assuming that values returned by the
-        database are standard Python types suitable to be passed to
-        fields.
+        We may assume that values returned by the database are standard
+        Python types suitable to be passed to fields.
         """
         return value
 
@@ -492,7 +495,7 @@ class NonrelDatabaseOperations(BaseDatabaseOperations):
             value = pickle.loads(value)
 
         # Let untyped fields determine the embedded instance's model.
-        embedded_model = field.model_for_data(value)
+        embedded_model = field.stored_model(value)
 
         # Deconvert fields' values and prepare a dict that can be used
         # to initialize a model (by changing keys from columns to

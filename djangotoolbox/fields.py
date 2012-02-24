@@ -270,11 +270,12 @@ class EmbeddedModelField(models.Field):
 
     model = property(lambda self: self._model, _set_model)
 
-    def model_for_data(self, data):
+    def stored_model(self, column_values):
         """
         Returns the fixed embedded_model this field was initialized
         with (typed embedding) or tries to determine the model from
-        _module / _model keys in the data (untyped embedding).
+        _module / _model keys stored together with column_values
+        (untyped embedding).
 
         We give precedence to the field's definition model, as silently
         using a differing serialized one could hide some data integrity
@@ -284,8 +285,8 @@ class EmbeddedModelField(models.Field):
         instances of different models (especially when used as a type
         of a collection field).
         """
-        module = data.pop('_module', None)
-        model = data.pop('_model', None)
+        module = column_values.pop('_module', None)
+        model = column_values.pop('_model', None)
         if self.embedded_model is not None:
             return self.embedded_model
         elif module is not None:
@@ -310,7 +311,7 @@ class EmbeddedModelField(models.Field):
         if isinstance(value, tuple):
             embedded_model, attribute_values = value
         elif isinstance(value, dict):
-            embedded_model = self.model_for_data(value)
+            embedded_model = self.stored_model(value)
             attribute_values = value
         else:
             return value
@@ -407,7 +408,7 @@ class LegacyEmbeddedModelField(EmbeddedModelField):
     value -> ObjectId).
     """
 
-    def model_for_data(self, data):
+    def stored_model(self, data):
         """
         Removes legacy model info from data.
 
@@ -419,7 +420,7 @@ class LegacyEmbeddedModelField(EmbeddedModelField):
         if '_id' in data:
             data['id'] = data.pop('_id')
 
-        return super(LegacyEmbeddedModelField, self).model_for_data(data)
+        return super(LegacyEmbeddedModelField, self).stored_model(data)
 
 
 class BlobField(models.Field):
