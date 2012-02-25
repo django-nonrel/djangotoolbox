@@ -3,6 +3,7 @@ import random
 
 from django.conf import settings
 from django.db.models.fields import NOT_PROVIDED, DecimalField
+from django.db.models.query import QuerySet
 from django.db.models.sql import aggregates as sqlaggregates
 from django.db.models.sql.compiler import SQLCompiler
 from django.db.models.sql.constants import LOOKUP_SEP, MULTI, SINGLE
@@ -211,18 +212,29 @@ class NonrelQuery(object):
     def _get_children(self, children):
         """
         Filters out nodes of the given contraint tree not needed for
-        nonrel queries.
+        nonrel queries; checks that given constraints are supported.
         """
         result = []
         for child in children:
 
-            # Remove leafs that were automatically added by
-            # sql.Query.add_filter to handle negations of outer joins.
             if isinstance(child, tuple):
-                constraint = child[0]
-                lookup_type = child[1]
+                constraint, lookup_type, _, value = child
+
+                # When doing a lookup using a QuerySet Django would use
+                # a subquery, but this won't work for nonrel.
+                # TODO: Add a supports_subqueries feature and let
+                #       Django evaluate subqueries instead of passing
+                #       them as SQL strings (QueryWrappers) to
+                #       filtering.
+                if isinstance(value, QuerySet):
+                    raise DatabaseError("Subqueries are not supported (yet).")
+
+                # Remove leafs that were automatically added by
+                # sql.Query.add_filter to handle negations of outer
+                # joins.
                 if lookup_type == 'isnull' and constraint.field is None:
                     continue
+
             result.append(child)
         return result
 

@@ -1,3 +1,5 @@
+from __future__ import with_statement
+
 from django.core import serializers
 from django.db import models
 from django.db.models import Q
@@ -633,3 +635,28 @@ class LazyObjectsTest(TestCase):
         self.assertEqual(
             list(String.objects.filter(s__startswith=mark_for_escaping('c'))),
             [c])
+
+
+class FeaturesTest(TestCase):
+    """
+    Some things are unlikely to cause problems for SQL back-ends, but
+    require special handling in nonrel.
+    """
+
+    def test_subqueries(self):
+        """
+        Django includes SQL statements as WHERE tree values when
+        filtering using a QuerySet -- this won't "just work" with
+        nonrel back-ends.
+
+        TODO: Subqueries handling may require a bit of Django
+              changing, but should be easy to support.
+        """
+        target = Target.objects.create(index=1)
+        source = Source.objects.create(index=2, target=target)
+        targets = Target.objects.all()
+        with self.assertRaises(DatabaseError):
+            sources = Source.objects.get(target__in=targets)
+        self.assertEqual(
+            Source.objects.get(target__in=list(targets)),
+            source)
