@@ -1,4 +1,5 @@
 from __future__ import with_statement
+from decimal import Decimal, InvalidOperation
 
 from django.core import serializers
 from django.db import models
@@ -7,7 +8,7 @@ from django.db.models.signals import post_save
 from django.db.utils import DatabaseError
 from django.dispatch.dispatcher import receiver
 from django.test import TestCase
-from django.utils import unittest
+from django.utils.unittest import expectedFailure
 
 from .fields import ListField, SetField, DictField, EmbeddedModelField
 
@@ -243,7 +244,7 @@ class IterableFieldsTest(TestCase):
         self.assertEqual(ReferenceList.objects.get().keys[0], model1.pk)
         self.assertEqual(len(ReferenceList.objects.filter(keys=model1.pk)), 1)
 
-    @unittest.expectedFailure
+    @expectedFailure
     def test_nested_list(self):
         """
         Some back-ends expect lists to be strongly typed or not contain
@@ -660,3 +661,56 @@ class FeaturesTest(TestCase):
         self.assertEqual(
             Source.objects.get(target__in=list(targets)),
             source)
+
+
+class DecimalModel(models.Model):
+    decimal = models.DecimalField(max_digits=9, decimal_places=2)
+
+
+class DecimalFieldTest(TestCase):
+    """
+    Some NoSQL databases can't handle Decimals, so respective back-ends
+    convert them to strings or floats. This can cause some precision
+    and sorting problems.
+    """
+
+    def setUp(self):
+        for d in (Decimal('12345.6789'), Decimal('5'), Decimal('345.67'),
+                  Decimal('45.6'), Decimal('2345.678'),):
+            DecimalModel(decimal=d).save()
+
+    def test_filter(self):
+        d = DecimalModel.objects.get(decimal=Decimal('5.0'))
+
+        self.assertTrue(isinstance(d.decimal, Decimal))
+        self.assertEquals(str(d.decimal), '5.00')
+
+        d = DecimalModel.objects.get(decimal=Decimal('45.60'))
+        self.assertEquals(str(d.decimal), '45.60')
+
+        # Filter argument should be converted to Decimal with 2 decimal
+        #_places.
+        d = DecimalModel.objects.get(decimal='0000345.67333333333333333')
+        self.assertEquals(str(d.decimal), '345.67')
+
+    @expectedFailure
+    def test_order(self):
+        """
+        Mongo relies on django.db.util.format_number which doesn't
+        preserve comparisons.
+
+        TODO: Fix in Django, use the fixed format_number in GAE too.
+        """
+        rows = DecimalModel.objects.all().order_by('decimal')
+        values = list(d.decimal for d in rows)
+        self.assertEquals(values, sorted(values))
+
+    def test_sign_extend(self):
+        DecimalModel(decimal=Decimal('-0.0')).save()
+
+        try:
+            # If we've written a valid string we should be able to
+            # retrieve the DecimalModel object without error.
+            DecimalModel.objects.filter(decimal__lt=1)[0]
+        except InvalidOperation:
+            self.assertTrue(False)
