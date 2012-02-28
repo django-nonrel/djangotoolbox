@@ -86,7 +86,8 @@ class NonrelQuery(object):
                       should be used for database keys
         :param lookup_type: Lookup name (e.g. "startswith")
         :param negated: Is the leaf negated
-        :param value: Lookup argument, such as a value to compare with
+        :param value: Lookup argument, such as a value to compare with;
+                      already prepared for the database
         """
         raise NotImplementedError("Not implemented.")
 
@@ -169,7 +170,8 @@ class NonrelQuery(object):
     def _normalize_lookup_value(self, lookup_type, value, field, annotation):
         """
         Undoes preparations done by `Field.get_db_prep_lookup` not
-        suitable for nonrel back-ends.
+        suitable for nonrel back-ends and passes the lookup argument
+        through nonrel's `value_for_db`.
 
         TODO: Blank Field.get_db_prep_lookup instead?
         """
@@ -198,7 +200,8 @@ class NonrelQuery(object):
         elif lookup_type in ('contains', 'icontains'):
             value = value[1:-1]
 
-        return value
+        # Prepare the value for a database using the nonrel framework.
+        return self.compiler.value_for_db(value, field, lookup_type)
 
     def _get_children(self, children):
         """
@@ -491,14 +494,18 @@ class NonrelCompiler(SQLCompiler):
                 descending = not descending
             yield (opts.get_field(field).column, descending)
 
-    def value_for_db(self, value, field, lookup=False):
+    def value_for_db(self, value, field, lookup=None):
         """
         Does type-conversions needed before storing a value in the
         the database or using it as a filter parameter.
 
         This is a convience wrapper that only precomputes field's kind
-        and a db_type for it and calls DatabaseOperations method to do
-        the real work; you should typically extend the operations class
+        and a db_type for the field (or the primary key of the related
+        model for ForeignKeys etc.) and knows that arguments to the
+        `isnull` lookup (`True` or `False`) should not be converted,
+        while some other lookups take a list of arguments.
+        In the end, it calls `DatabaseOperations.value_for_db` to do
+        the real work; you should typically extend the operations
         method, but only call this one.
 
         Note that compilers may do conversions without building a
@@ -507,12 +514,29 @@ class NonrelCompiler(SQLCompiler):
 
         :param value: A value to be passed to the database driver
         :param field: A field the value comes from
-        :param lookup: Is the value being prepared as a filter
-                       parameter or for storage
+        :param lookup: None if the value is being prepared for storage;
+                       lookup type name, when its going to be used as a
+                       filter argument
         """
-        return self.ops.value_for_db(value, field,
-            field.get_internal_type(),
-            self.creation.db_type(field), lookup)
+
+        # We need to compute db_type using the original field to allow
+        # GAE to use different storage for primary and foreign keys.
+        db_type = self.creation.db_type(field)
+        if field.rel is not None:
+            field = field.rel.get_related_field()
+        field_kind = field.get_internal_type()
+
+        # Argument to the "isnull" lookup is just a boolean, while some
+        # other lookups take a list of values.
+        if lookup == 'isnull':
+            return value
+        elif lookup in ('in', 'range', 'year'):
+            return [self.ops.value_for_db(subvalue, field,
+                                          field_kind, db_type, lookup)
+                    for subvalue in value]
+        else:
+            return self.ops.value_for_db(value, field,
+                                         field_kind, db_type, lookup)
 
     def value_from_db(self, value, field):
         """
@@ -521,9 +545,11 @@ class NonrelCompiler(SQLCompiler):
         :param value: A value received from the database client
         :param field: A field the value is meant for
         """
-        return self.ops.value_from_db(value, field,
-            field.get_internal_type(),
-            self.creation.db_type(field))
+        db_type = self.creation.db_type(field)
+        if field.rel is not None:
+            field = field.rel.get_related_field()
+        field_kind = field.get_internal_type()
+        return self.ops.value_from_db(value, field, field_kind, db_type)
 
 
 class NonrelInsertCompiler(NonrelCompiler):

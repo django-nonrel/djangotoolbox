@@ -213,11 +213,15 @@ class NonrelDatabaseOperations(BaseDatabaseOperations):
 
         :param value: A value to be passed to the database driver
         :param field: A field having the same properties as the field
-                      the value comes from
+                      the value comes from; instead of related fields
+                      you'll get the related model primary key, as the
+                      value usually needs to be converted using its
+                      properties
         :param field_kind: Equal to field.get_internal_type()
         :param db_type: Same as creation.db_type(field)
-        :param lookup: Is the value being prepared as a filter
-                       parameter or for storage
+        :param lookup: None if the value is being prepared for storage;
+                       lookup type name, when its going to be used as a
+                       filter argument
         """
 
         # Back-ends may want to store empty lists or dicts as None.
