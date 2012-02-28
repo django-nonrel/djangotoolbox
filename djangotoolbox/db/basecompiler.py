@@ -234,10 +234,11 @@ class NonrelQuery(object):
 
     def _matches_filters(self, entity, filters):
         """
-        Checks if an entity returned by the database would match
-        constraints in a WHERE tree.
+        Checks if an entity returned by the database satisfies
+        constraints in a WHERE tree (in-memory filtering).
 
-        TODO: Use _decode_child and _normalize_lookup_value.
+        Checks if an entity returned by the database satisfies
+        constraints in a WHERE tree (in-memory filtering).
         """
 
         # Filters without rules match everything.
@@ -247,33 +248,17 @@ class NonrelQuery(object):
         result = filters.connector == AND
 
         for child in filters.children:
+
+            # Recursively check a subtree,
             if isinstance(child, Node):
                 submatch = self._matches_filters(entity, child)
+
+            # Check constraint leaf, emulating a database condition.
             else:
-                constraint, lookup_type, annotation, value = child
-                packed, value = constraint.process(lookup_type, value,
-                                                   self.connection)
-                alias, column, db_type = packed
-                if alias != self.query.model._meta.db_table:
-                    raise DatabaseError("This database doesn't support JOINs "
-                                        "and multi-table inheritance.")
+                field, lookup_type, lookup_value = self._decode_child(child)
+                entity_value = entity[field.column]
 
-                # Django fields always return a list except if
-                # get_db_prep_lookup got overridden by a subclass
-                # (see Field.get_db_prep_lookup).
-                if lookup_type != 'in' and isinstance(value, (tuple, list)):
-                    if len(value) > 1:
-                        raise DatabaseError("Filter lookup type was %s; "
-                                            "expected the filter argument not "
-                                            "to be a list. Only 'in'-filters "
-                                            "can be used with lists." %
-                                            lookup_type)
-                    elif lookup_type == 'isnull':
-                        value = annotation
-                    else:
-                        value = value[0]
-
-                if entity[column] is None:
+                if entity_value is None:
                     if isinstance(value, (datetime.datetime, datetime.date,
                                           datetime.time)):
                         submatch = lookup_type in ('lt', 'lte')
@@ -282,11 +267,11 @@ class NonrelQuery(object):
                             'istartswith', 'icontains', 'iendswith'):
                         submatch = False
                     else:
-                        submatch = EMULATED_OPS[lookup_type](entity[column],
-                                                             value)
+                        submatch = EMULATED_OPS[lookup_type](
+                            entity_value, lookup_value)
                 else:
-                    submatch = EMULATED_OPS[lookup_type](entity[column],
-                                                         value)
+                    submatch = EMULATED_OPS[lookup_type](
+                        entity_value, lookup_value)
 
             if filters.connector == OR and submatch:
                 result = True
