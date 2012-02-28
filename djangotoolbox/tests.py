@@ -693,13 +693,10 @@ class DecimalFieldTest(TestCase):
         d = DecimalModel.objects.get(decimal='0000345.67333333333333333')
         self.assertEquals(str(d.decimal), '345.67')
 
-    @expectedFailure
     def test_order(self):
         """
-        Mongo relies on django.db.util.format_number which doesn't
-        preserve comparisons.
-
-        TODO: Fix in Django, use the fixed format_number in GAE too.
+        Standard Django decimal-to-string conversion isn't monotonic
+        (see `django.db.backends.util.format_number`).
         """
         rows = DecimalModel.objects.all().order_by('decimal')
         values = list(d.decimal for d in rows)

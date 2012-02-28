@@ -74,10 +74,9 @@ class NonrelDatabaseOperations(BaseDatabaseOperations):
        deserializing (so single to_python is inconvenient) and need to
        do some recursion, so a single value_for_db is better than one
        method for each field kind.
-
-    Prefer standard methods when the conversion is specific to a
-    field kind and the added value_for/from_db methods when you
-    can convert any value of a "type".
+    Don't use these standard methods in nonrel, `value_for/from_db` are
+    more elastic and keeping all conversions in one place makes the
+    code easier to analyse.
 
     Please note, that after changes to type conversions, data saved
     using preexisting methods needs to be handled; and also that Django
