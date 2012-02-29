@@ -74,6 +74,12 @@ class NonrelQuery(object):
         raise NotImplementedError
 
     def order_by(self, ordering):
+        """
+        Reorders query results or execution order. Called by
+        NonrelCompilers during query building.
+
+        :param ordering: A list with (field, descending) tuples
+        """
         raise NotImplementedError
 
     def add_filter(self, field, lookup_type, negated, value):
@@ -284,7 +290,8 @@ class NonrelQuery(object):
         return result
 
     def _order_in_memory(self, lhs, rhs):
-        for column, descending in self.compiler._get_ordering():
+        for field, descending in self.compiler._get_ordering():
+            column = field.column
             result = cmp(lhs.get(column), rhs.get(column))
             if descending:
                 result *= -1
@@ -480,7 +487,7 @@ class NonrelCompiler(SQLCompiler):
                 field = opts.pk.name
             if not self.query.standard_ordering:
                 descending = not descending
-            yield (opts.get_field(field).column, descending)
+            yield (opts.get_field(field), descending)
 
     def value_for_db(self, value, field, lookup=None):
         """

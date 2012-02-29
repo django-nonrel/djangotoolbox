@@ -525,6 +525,13 @@ class OrderByTest(TestCase):
         self.assertEqual(list(DBColumn.objects.all().order_by('-a').reverse()),
                          [model1, model2])
 
+    def test_chain(self):
+        model1 = Target.objects.create(index=1)
+        model2 = Target.objects.create(index=2)
+        self.assertEqual(
+            list(Target.objects.all().order_by('index').order_by('-index')),
+            [model2, model1])
+
 
 class SerializableSetModel(models.Model):
     setfield = SetField(models.IntegerField())
