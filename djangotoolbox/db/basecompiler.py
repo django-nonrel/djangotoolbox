@@ -39,16 +39,15 @@ class NonrelQuery(object):
     framework for converting SQL constraint tree built by Django to a
     "representation" more suitable for most NoSQL databases.
 
-    TODO: Replace with FetchCompiler, there are to many query concepts
+    TODO: Replace with FetchCompiler, there are too many query concepts
           around, and it isn't a good abstraction for NoSQL databases.
 
-    TODO: Nonrel currently uses constraint's tree built by Django to
-          handle filtering. However, Django intermingles translating
-          its lookup syntax abstraction to a logical formula with some
-          preprocessing for joins, and this results in multiple hacks
-          in nonrel. It would be a nice (though likely sizable) project
-          to build some abstraction that would be suitable for both
-          contexts.
+    TODO: Nonrel currently uses constraint's tree built by Django for
+          its SQL back-ends to handle filtering. However, Django
+          intermingles translating its lookup / filtering abstraction
+          to a logical formula with some preprocessing for joins and
+          this results in hacks in nonrel. It would be a better to pull
+          out SQL-specific parts from the constraints preprocessing.
     """
 
     # ----------------------------------------------
@@ -63,19 +62,19 @@ class NonrelQuery(object):
         self._negated = False
 
     def fetch(self, low_mark=0, high_mark=None):
-        raise NotImplementedError("Not implemented.")
+        raise NotImplementedError
 
     def count(self, limit=None):
-        raise NotImplementedError("Not implemented.")
+        raise NotImplementedError
 
     def delete(self):
         """
         Called by NonrelDeleteCompiler after it builds a delete query.
         """
-        raise NotImplementedError("Not implemented.")
+        raise NotImplementedError
 
     def order_by(self, ordering):
-        raise NotImplementedError("Not implemented.")
+        raise NotImplementedError
 
     def add_filter(self, field, lookup_type, negated, value):
         """
@@ -89,7 +88,7 @@ class NonrelQuery(object):
         :param value: Lookup argument, such as a value to compare with;
                       already prepared for the database
         """
-        raise NotImplementedError("Not implemented.")
+        raise NotImplementedError
 
     def add_filters(self, filters):
         """
@@ -173,12 +172,12 @@ class NonrelQuery(object):
         suitable for nonrel back-ends and passes the lookup argument
         through nonrel's `value_for_db`.
 
-        TODO: Blank Field.get_db_prep_lookup instead?
+        TODO: Blank `Field.get_db_prep_lookup` and remove this method.
         """
 
         # Undo Field.get_db_prep_lookup putting most values in a list
-        # (a subclass may override this, so check if it's a list).
-        # TODO: Explain the "isnull" case.
+        # (a subclass may override this, so check if it's a list) and
+        # losing the (True / False) argument to the "isnull" lookup.
         if lookup_type not in ('in', 'range', 'year') and \
            isinstance(value, (tuple, list)):
             if len(value) > 1:
@@ -387,7 +386,11 @@ class NonrelCompiler(SQLCompiler):
         """
         Checks if the current query is supported by the database.
 
-        TODO: Short description of what is expected not to be available.
+        In general, we expect queries requiring JOINs (many-to-many
+        relations, abstract model bases, or model spanning filtering),
+        using DISTINCT (through `QuerySet.distinct()`, which is not
+        required in most situations) or using the SQL-specific
+        `QuerySet.extra()` to not work with nonrel back-ends.
         """
         if (len([a for a in self.query.alias_map if
                  self.query.alias_refcount[a]]) > 1 or
@@ -492,10 +495,6 @@ class NonrelCompiler(SQLCompiler):
         In the end, it calls `DatabaseOperations.value_for_db` to do
         the real work; you should typically extend the operations
         method, but only call this one.
-
-        Note that compilers may do conversions without building a
-        NonrelQuery, thus we need to define this method here rather
-        than on the query class.
 
         :param value: A value to be passed to the database driver
         :param field: A field the value comes from

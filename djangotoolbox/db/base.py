@@ -53,7 +53,7 @@ class NonrelDatabaseFeatures(BaseDatabaseFeatures):
 class NonrelDatabaseOperations(BaseDatabaseOperations):
     """
     Override all database conversions normally done by fields (through
-    get_db_prep_value/save/lookup) to make it possible to pass Python
+    `get_db_prep_value/save/lookup`) to make it possible to pass Python
     values directly to the database layer. On the other hand, provide a
     framework for making type-based conversions --  drivers of NoSQL
     database either can work with Python objects directly, sometimes
@@ -61,7 +61,7 @@ class NonrelDatabaseOperations(BaseDatabaseOperations):
     in some specific manner.
 
     Django normally handles conversions for the database by providing
-    BaseDatabaseOperations.value_to_db_* / convert_values methods,
+    `BaseDatabaseOperations.value_to_db_*` / `convert_values` methods,
     but there are some problems with them:
     -- some preparations need to be done for all values or for values
        of a particular "kind" (e.g. lazy objects evaluation or casting
@@ -72,7 +72,7 @@ class NonrelDatabaseOperations(BaseDatabaseOperations):
     -- we need to handle collecion fields (list, set, dict): they
        need to differentiate between deconverting from database and
        deserializing (so single to_python is inconvenient) and need to
-       do some recursion, so a single value_for_db is better than one
+       do some recursion, so a single `value_for_db` is better than one
        method for each field kind.
     Don't use these standard methods in nonrel, `value_for/from_db` are
     more elastic and keeping all conversions in one place makes the
@@ -82,6 +82,11 @@ class NonrelDatabaseOperations(BaseDatabaseOperations):
     using preexisting methods needs to be handled; and also that Django
     does not expect any special database driver exceptions, so any such
     exceptions should be reraised as django.db.utils.DatabaseError.
+
+    TODO: Consider replacing all `value_to_db_*` and `convert_values`
+          with just `BaseDatabaseOperations.value_for/from_db` and also
+          moving there code from `Field.get_db_prep_lookup` (and maybe
+          `RelatedField.get_db_prep_lookup`).
     """
 
     def __init__(self, connection):
