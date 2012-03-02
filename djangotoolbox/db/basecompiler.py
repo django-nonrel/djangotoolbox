@@ -241,9 +241,6 @@ class NonrelQuery(object):
         """
         Checks if an entity returned by the database satisfies
         constraints in a WHERE tree (in-memory filtering).
-
-        Checks if an entity returned by the database satisfies
-        constraints in a WHERE tree (in-memory filtering).
         """
 
         # Filters without rules match everything.
