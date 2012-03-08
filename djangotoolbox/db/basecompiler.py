@@ -331,7 +331,6 @@ class NonrelCompiler(SQLCompiler):
         Returns an iterator over the results from executing query given
         to this compiler. Called by QuerySet methods.
         """
-        self.check_query()
         fields = self.get_fields()
         results = self.build_query(fields).fetch(
             self.query.low_mark, self.query.high_mark)
@@ -420,7 +419,11 @@ class NonrelCompiler(SQLCompiler):
         return self.build_query().count(high_mark)
 
     def build_query(self, fields=None):
-        """Prepares a NonrelQuery to be executed on the database."""
+        """
+        Checks if the underlying SQL query is supported and prepares
+        a NonrelQuery to be executed on the database.
+        """
+        self.check_query()
         if fields is None:
             fields = self.get_fields()
         query = self.query_class(self, fields)
