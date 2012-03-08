@@ -62,9 +62,16 @@ class NonrelQuery(object):
         self._negated = False
 
     def fetch(self, low_mark=0, high_mark=None):
+        """
+        Returns an iterator over some part of query results.
+        """
         raise NotImplementedError
 
     def count(self, limit=None):
+        """
+        Returns the number of objects that would be returned, if
+        this query was executed, up to `limit`.
+        """
         raise NotImplementedError
 
     def delete(self):
@@ -309,9 +316,7 @@ class NonrelCompiler(SQLCompiler):
 
     def __init__(self, query, connection, using):
         """
-        Initializes SQLComplier for the given query and connection and
-        saves references to connections's DatabaseCreation/Operations
-        for quick access in conversion wrappers.
+        Initializes the underlying SQLCompiler.
         """
         super(NonrelCompiler, self).__init__(query, connection, using)
         self.creation = self.connection.creation
@@ -323,13 +328,14 @@ class NonrelCompiler(SQLCompiler):
 
     def results_iter(self):
         """
-        Returns an iterator over the results from executing this query.
+        Returns an iterator over the results from executing query given
+        to this compiler. Called by QuerySet methods.
         """
         self.check_query()
         fields = self.get_fields()
-        low_mark = self.query.low_mark
-        high_mark = self.query.high_mark
-        for entity in self.build_query(fields).fetch(low_mark, high_mark):
+        results = self.build_query(fields).fetch(
+            self.query.low_mark, self.query.high_mark)
+        for entity in results:
             yield self._make_result(entity, fields)
 
     def has_results(self):

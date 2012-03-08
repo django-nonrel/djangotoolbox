@@ -180,20 +180,20 @@ class IterableFieldsTest(TestCase):
 
     def test_chained_filter(self):
         self.assertEquals(
-            [entity.names for entity in ListModel.objects.
-                filter(names='Sasuke').filter(names='Sakura')],
+            [entity.names for entity in ListModel.objects
+                .filter(names='Sasuke').filter(names='Sakura')],
             [['Kakashi', 'Naruto', 'Sasuke', 'Sakura'], ])
 
         self.assertEquals(
-            [entity.names for entity in ListModel.objects.
-                filter(names__startswith='Sa').filter(names='Sakura')],
+            [entity.names for entity in ListModel.objects
+                .filter(names__startswith='Sa').filter(names='Sakura')],
             [['Kakashi', 'Naruto', 'Sasuke', 'Sakura']])
 
         # Test across multiple columns. On app engine only one filter
         # is allowed to be an inequality filter.
         self.assertEquals(
-            [entity.names for entity in ListModel.objects.
-                filter(floating_point=9.1).filter(names__startswith='Sa')],
+            [entity.names for entity in ListModel.objects
+                .filter(floating_point=9.1).filter(names__startswith='Sa')],
             [['Kakashi', 'Naruto', 'Sasuke'], ])
 
     def test_setfield(self):
@@ -226,8 +226,8 @@ class IterableFieldsTest(TestCase):
 
     def test_Q_objects(self):
         self.assertEquals(
-            [entity.names for entity in ListModel.objects.
-                exclude(Q(names__lt='Sakura') | Q(names__gte='Sasuke'))],
+            [entity.names for entity in ListModel.objects
+                .exclude(Q(names__lt='Sakura') | Q(names__gte='Sasuke'))],
             [['Kakashi', 'Naruto', 'Sasuke', 'Sakura']])
 
     def test_list_with_foreignkeys(self):
