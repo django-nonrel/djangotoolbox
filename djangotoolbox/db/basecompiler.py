@@ -319,7 +319,6 @@ class NonrelCompiler(SQLCompiler):
         Initializes the underlying SQLCompiler.
         """
         super(NonrelCompiler, self).__init__(query, connection, using)
-        self.creation = self.connection.creation
         self.ops = self.connection.ops
 
     # ----------------------------------------------
@@ -496,57 +495,10 @@ class NonrelCompiler(SQLCompiler):
             yield (opts.get_field(field), descending)
 
     def value_for_db(self, value, field, lookup=None):
-        """
-        Does type-conversions needed before storing a value in the
-        the database or using it as a filter parameter.
-
-        This is a convience wrapper that only precomputes field's kind
-        and a db_type for the field (or the primary key of the related
-        model for ForeignKeys etc.) and knows that arguments to the
-        `isnull` lookup (`True` or `False`) should not be converted,
-        while some other lookups take a list of arguments.
-        In the end, it calls `DatabaseOperations.value_for_db` to do
-        the real work; you should typically extend the operations
-        method, but only call this one.
-
-        :param value: A value to be passed to the database driver
-        :param field: A field the value comes from
-        :param lookup: None if the value is being prepared for storage;
-                       lookup type name, when its going to be used as a
-                       filter argument
-        """
-
-        # We need to compute db_type using the original field to allow
-        # GAE to use different storage for primary and foreign keys.
-        db_type = self.creation.db_type(field)
-        if field.rel is not None:
-            field = field.rel.get_related_field()
-        field_kind = field.get_internal_type()
-
-        # Argument to the "isnull" lookup is just a boolean, while some
-        # other lookups take a list of values.
-        if lookup == 'isnull':
-            return value
-        elif lookup in ('in', 'range', 'year'):
-            return [self.ops.value_for_db(subvalue, field,
-                                          field_kind, db_type, lookup)
-                    for subvalue in value]
-        else:
-            return self.ops.value_for_db(value, field,
-                                         field_kind, db_type, lookup)
+        return self.ops.value_for_db(value, field, lookup)
 
     def value_from_db(self, value, field):
-        """
-        Performs deconversions defined by back-end's DatabaseOperations.
-
-        :param value: A value received from the database client
-        :param field: A field the value is meant for
-        """
-        db_type = self.creation.db_type(field)
-        if field.rel is not None:
-            field = field.rel.get_related_field()
-        field_kind = field.get_internal_type()
-        return self.ops.value_from_db(value, field, field_kind, db_type)
+        return self.ops.value_from_db(value, field)
 
 
 class NonrelInsertCompiler(NonrelCompiler):

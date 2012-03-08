@@ -174,7 +174,60 @@ class NonrelDatabaseOperations(BaseDatabaseOperations):
             raise NotImplementedError("This database does not support %r "
                                       "aggregates." % type(aggregate))
 
-    def value_for_db(self, value, field, field_kind, db_type, lookup):
+    def value_for_db(self, value, field, lookup=None):
+        """
+        Does type-conversions needed before storing a value in the
+        the database or using it as a filter parameter.
+
+        This is a convience wrapper that only precomputes field's kind
+        and a db_type for the field (or the primary key of the related
+        model for ForeignKeys etc.) and knows that arguments to the
+        `isnull` lookup (`True` or `False`) should not be converted,
+        while some other lookups take a list of arguments.
+        In the end, it calls `_value_for_db` to do the real work; you
+        should typically extend that method, but only call this one.
+
+        :param value: A value to be passed to the database driver
+        :param field: A field the value comes from
+        :param lookup: None if the value is being prepared for storage;
+                       lookup type name, when its going to be used as a
+                       filter argument
+        """
+
+        # We need to compute db_type using the original field to allow
+        # GAE to use different storage for primary and foreign keys.
+        db_type = self.connection.creation.db_type(field)
+        if field.rel is not None:
+            field = field.rel.get_related_field()
+        field_kind = field.get_internal_type()
+
+        # Argument to the "isnull" lookup is just a boolean, while some
+        # other lookups take a list of values.
+        if lookup == 'isnull':
+            return value
+        elif lookup in ('in', 'range', 'year'):
+            return [self._value_for_db(subvalue, field,
+                                       field_kind, db_type, lookup)
+                    for subvalue in value]
+        else:
+            return self._value_for_db(value, field,
+                                      field_kind, db_type, lookup)
+
+    def value_from_db(self, value, field):
+        """
+        Performs deconversions defined by `_value_from_db`.
+
+        :param value: A value received from the database client
+        :param field: A field the value is meant for
+        """
+        db_type = self.connection.creation.db_type(field)
+        if field.rel is not None:
+            field = field.rel.get_related_field()
+        field_kind = field.get_internal_type()
+        return self._value_from_db(value, field, field_kind, db_type)
+
+
+    def _value_for_db(self, value, field, field_kind, db_type, lookup):
         """
         Converts a standard Python value to a type that can be stored
         or processed by the database driver.
@@ -236,17 +289,17 @@ class NonrelDatabaseOperations(BaseDatabaseOperations):
 
         # Convert elements of collection fields.
         if field_kind in ('ListField', 'SetField', 'DictField',):
-            value = self.value_for_db_collection(value, field,
-                                                 field_kind, db_type, lookup)
+            value = self._value_for_db_collection(value, field,
+                                                  field_kind, db_type, lookup)
 
         # Store model instance fields' values.
         elif field_kind == 'EmbeddedModelField':
-            value = self.value_for_db_model(value, field,
-                                            field_kind, db_type, lookup)
+            value = self._value_for_db_model(value, field,
+                                             field_kind, db_type, lookup)
 
         return value
 
-    def value_from_db(self, value, field, field_kind, db_type):
+    def _value_from_db(self, value, field, field_kind, db_type):
         """
         Converts a database type to a type acceptable by the field.
 
@@ -272,18 +325,18 @@ class NonrelDatabaseOperations(BaseDatabaseOperations):
 
         # Deconvert items or values of a collection field.
         if field_kind in ('ListField', 'SetField', 'DictField',):
-            value = self.value_from_db_collection(value, field,
-                                                  field_kind, db_type)
+            value = self._value_from_db_collection(value, field,
+                                                   field_kind, db_type)
 
         # Reinstatiate a serialized model.
         elif field_kind == 'EmbeddedModelField':
-            value = self.value_from_db_model(value, field,
-                                             field_kind, db_type)
+            value = self._value_from_db_model(value, field,
+                                              field_kind, db_type)
 
         return value
 
-    def value_for_db_collection(self, value, field, field_kind, db_type,
-                                lookup):
+    def _value_for_db_collection(self, value, field, field_kind, db_type,
+                                 lookup):
         """
         Recursively converts values from AbstractIterableFields.
 
@@ -318,8 +371,8 @@ class NonrelDatabaseOperations(BaseDatabaseOperations):
 
         # Do convert filter parameters.
         if lookup:
-            value = self.value_for_db(value, subfield,
-                                      subkind, db_subtype, lookup)
+            value = self._value_for_db(value, subfield,
+                                       subkind, db_subtype, lookup)
 
         # Convert list/set items or dict values.
         else:
@@ -327,8 +380,8 @@ class NonrelDatabaseOperations(BaseDatabaseOperations):
 
                 # Generator yielding pairs with converted values.
                 value = (
-                    (key, self.value_for_db(subvalue, subfield,
-                                            subkind, db_subtype, lookup))
+                    (key, self._value_for_db(subvalue, subfield,
+                                             subkind, db_subtype, lookup))
                     for key, subvalue in value.iteritems())
 
                 # Return just a dict, a once-flattened list;
@@ -341,8 +394,8 @@ class NonrelDatabaseOperations(BaseDatabaseOperations):
 
                 # Generator producing converted items.
                 value = (
-                    self.value_for_db(subvalue, subfield,
-                                      subkind, db_subtype, lookup)
+                    self._value_for_db(subvalue, subfield,
+                                       subkind, db_subtype, lookup)
                     for subvalue in value)
 
                 # "list" may be used for SetField.
@@ -363,7 +416,7 @@ class NonrelDatabaseOperations(BaseDatabaseOperations):
         # If nothing matched, pass the generator to the back-end.
         return value
 
-    def value_from_db_collection(self, value, field, field_kind, db_type):
+    def _value_from_db_collection(self, value, field, field_kind, db_type):
         """
         Recursively deconverts values for AbstractIterableFields.
 
@@ -392,15 +445,15 @@ class NonrelDatabaseOperations(BaseDatabaseOperations):
 
             # DictField needs to hold a dict.
             return dict(
-                (key, self.value_from_db(subvalue, subfield,
-                                         subkind, db_subtype))
+                (key, self._value_from_db(subvalue, subfield,
+                                          subkind, db_subtype))
                 for key, subvalue in value)
         else:
 
             # Generator yielding deconverted items.
             value = (
-                self.value_from_db(subvalue, subfield,
-                                   subkind, db_subtype)
+                self._value_from_db(subvalue, subfield,
+                                    subkind, db_subtype)
                 for subvalue in value)
 
             # The value will be available from the field without any
@@ -413,7 +466,7 @@ class NonrelDatabaseOperations(BaseDatabaseOperations):
             # A new field kind? Maybe it can take a generator.
             return value
 
-    def value_for_db_model(self, value, field, field_kind, db_type, lookup):
+    def _value_for_db_model(self, value, field, field_kind, db_type, lookup):
         """
         Converts a field => value mapping received from an
         EmbeddedModelField the format chosen for the field storage.
@@ -445,7 +498,7 @@ class NonrelDatabaseOperations(BaseDatabaseOperations):
         # fields to columns.
         value = (
             (subfield.column,
-             self.value_for_db(
+             self._value_for_db(
                 subvalue, subfield, subfield.get_internal_type(),
                 self.connection.creation.db_type(subfield), lookup))
             for subfield, subvalue in value.iteritems())
@@ -463,7 +516,7 @@ class NonrelDatabaseOperations(BaseDatabaseOperations):
 
         return value
 
-    def value_from_db_model(self, value, field, field_kind, db_type):
+    def _value_from_db_model(self, value, field, field_kind, db_type):
         """
         Deconverts values stored for EmbeddedModelFields.
 
@@ -487,7 +540,7 @@ class NonrelDatabaseOperations(BaseDatabaseOperations):
         # to initialize a model (by changing keys from columns to
         # attribute names).
         return embedded_model, dict(
-            (subfield.attname, self.value_from_db(
+            (subfield.attname, self._value_from_db(
                 value[subfield.column], subfield,
                 subfield.get_internal_type(),
                 self.connection.creation.db_type(subfield)))
@@ -495,7 +548,7 @@ class NonrelDatabaseOperations(BaseDatabaseOperations):
             if subfield.column in value)
 
 
-    def value_for_db_key(self, value, field_kind):
+    def _value_for_db_key(self, value, field_kind):
         """
         Converts value to be used as a key to an acceptable type.
         On default we do no encoding, only allowing key values directly
@@ -511,7 +564,7 @@ class NonrelDatabaseOperations(BaseDatabaseOperations):
         raise DatabaseError(
             "%s may not be used as primary key field." % field_kind)
 
-    def value_from_db_key(self, value, field_kind):
+    def _value_from_db_key(self, value, field_kind):
         """
         Decodes a value previously encoded for a key.
         """
