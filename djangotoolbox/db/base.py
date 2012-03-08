@@ -194,12 +194,7 @@ class NonrelDatabaseOperations(BaseDatabaseOperations):
                        filter argument
         """
 
-        # We need to compute db_type using the original field to allow
-        # GAE to use different storage for primary and foreign keys.
-        db_type = self.connection.creation.db_type(field)
-        if field.rel is not None:
-            field = field.rel.get_related_field()
-        field_kind = field.get_internal_type()
+        field, field_kind, db_type = self._convert_as(field)
 
         # Argument to the "isnull" lookup is just a boolean, while some
         # other lookups take a list of values.
@@ -220,12 +215,21 @@ class NonrelDatabaseOperations(BaseDatabaseOperations):
         :param value: A value received from the database client
         :param field: A field the value is meant for
         """
+        return self._value_from_db(value, *self._convert_as(field))
+
+    def _convert_as(self, field):
+        """
+        Computes parameters that should be used for preparing the field
+        for the database or deconverting a database value for it.
+        """
+        # We need to compute db_type using the original field to allow
+        # GAE to use different storage for primary and foreign keys.
         db_type = self.connection.creation.db_type(field)
+
         if field.rel is not None:
             field = field.rel.get_related_field()
         field_kind = field.get_internal_type()
-        return self._value_from_db(value, field, field_kind, db_type)
-
+        return field, field_kind, db_type
 
     def _value_for_db(self, value, field, field_kind, db_type, lookup):
         """
@@ -365,9 +369,7 @@ class NonrelDatabaseOperations(BaseDatabaseOperations):
         If an unknown db_type is specified, returns a generator
         yielding converted elements / pairs with converted values.
         """
-        subfield = field.item_field
-        subkind = subfield.get_internal_type()
-        db_subtype = self.connection.creation.db_type(subfield)
+        subfield, subkind, db_subtype = self._convert_as(field.item_field)
 
         # Do convert filter parameters.
         if lookup:
@@ -426,9 +428,7 @@ class NonrelDatabaseOperations(BaseDatabaseOperations):
         Returns a value in a format proper for the field kind (the
         value will normally not go through to_python).
         """
-        subfield = field.item_field
-        subkind = subfield.get_internal_type()
-        db_subtype = self.connection.creation.db_type(subfield)
+        subfield, subkind, db_subtype = self._convert_as(field.item_field)
 
         # Unpickle (a dict) if a serialized storage is used.
         if db_type == 'bytes' or db_type == 'string':
@@ -496,11 +496,10 @@ class NonrelDatabaseOperations(BaseDatabaseOperations):
 
         # Convert using proper instance field's info, change keys from
         # fields to columns.
+        # TODO/XXX: Arguments order due to Python 2.5 compatibility.
         value = (
-            (subfield.column,
-             self._value_for_db(
-                subvalue, subfield, subfield.get_internal_type(),
-                self.connection.creation.db_type(subfield), lookup))
+            (subfield.column, self._value_for_db(
+                subvalue, lookup=lookup, *self._convert_as(subfield)))
             for subfield, subvalue in value.iteritems())
 
         # Cast to a dict, interleave columns with values on a list,
@@ -541,12 +540,9 @@ class NonrelDatabaseOperations(BaseDatabaseOperations):
         # attribute names).
         return embedded_model, dict(
             (subfield.attname, self._value_from_db(
-                value[subfield.column], subfield,
-                subfield.get_internal_type(),
-                self.connection.creation.db_type(subfield)))
+                value[subfield.column], *self._convert_as(subfield)))
             for subfield in embedded_model._meta.fields
             if subfield.column in value)
-
 
     def _value_for_db_key(self, value, field_kind):
         """

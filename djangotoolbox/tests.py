@@ -32,6 +32,22 @@ class Source(models.Model):
     index = models.IntegerField()
 
 
+class DecimalModel(models.Model):
+    decimal = models.DecimalField(max_digits=9, decimal_places=2)
+
+
+class DecimalKey(models.Model):
+    decimal = models.DecimalField(max_digits=9, decimal_places=2, primary_key=True)
+
+
+class DecimalParent(models.Model):
+    child = models.ForeignKey(DecimalKey)
+
+
+class DecimalsList(models.Model):
+    decimals = ListField(models.ForeignKey(DecimalKey))
+
+
 class ListModel(models.Model):
     integer = models.IntegerField(primary_key=True)
     floating_point = models.FloatField()
@@ -60,6 +76,7 @@ class DictModel(models.Model):
 class EmbeddedModelFieldModel(models.Model):
     simple = EmbeddedModelField('EmbeddedModel', null=True)
     simple_untyped = EmbeddedModelField(null=True)
+    decimal_parent = EmbeddedModelField(DecimalParent, null=True)
     typed_list = ListField(EmbeddedModelField('SetModel'))
     typed_list2 = ListField(EmbeddedModelField('EmbeddedModel'))
     untyped_list = ListField(EmbeddedModelField())
@@ -244,6 +261,10 @@ class IterableFieldsTest(TestCase):
         self.assertEqual(ReferenceList.objects.get().keys[0], model1.pk)
         self.assertEqual(len(ReferenceList.objects.filter(keys=model1.pk)), 1)
 
+    def test_list_with_foreign_conversion(self):
+        decimal = DecimalKey.objects.create(decimal=Decimal('1.5'))
+        DecimalsList.objects.create(decimals=[decimal.pk])
+
     @expectedFailure
     def test_nested_list(self):
         """
@@ -404,6 +425,11 @@ class EmbeddedModelFieldTest(TestCase):
         self.assertIsInstance(simple.__dict__['some_relation_id'],
                               type(obj.id))
         self.assertIsInstance(simple.some_relation, DictModel)
+
+    def test_embedded_field_with_foreign_conversion(self):
+        decimal = DecimalKey.objects.create(decimal=Decimal('1.5'))
+        decimal_parent = DecimalParent.objects.create(child=decimal)
+        EmbeddedModelFieldModel.objects.create(decimal_parent=decimal_parent)
 
     def test_update(self):
         """
@@ -668,10 +694,6 @@ class FeaturesTest(TestCase):
         self.assertEqual(
             Source.objects.get(target__in=list(targets)),
             source)
-
-
-class DecimalModel(models.Model):
-    decimal = models.DecimalField(max_digits=9, decimal_places=2)
 
 
 class DecimalFieldTest(TestCase):
