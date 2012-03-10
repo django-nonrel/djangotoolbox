@@ -57,7 +57,8 @@ class NonrelQuery(object):
     def __init__(self, compiler, fields):
         self.compiler = compiler
         self.connection = compiler.connection
-        self.query = self.compiler.query # sql.Query
+        self.ops = compiler.connection.ops
+        self.query = compiler.query # sql.Query
         self.fields = fields
         self._negated = False
 
@@ -213,7 +214,7 @@ class NonrelQuery(object):
             value = value[1:-1]
 
         # Prepare the value for a database using the nonrel framework.
-        return self.compiler.value_for_db(value, field, lookup_type)
+        return self.ops.value_for_db(value, field, lookup_type)
 
     def _get_children(self, children):
         """
@@ -372,8 +373,8 @@ class NonrelCompiler(SQLCompiler):
         Decodes values for the given fields from the database entity.
 
         The entity is assumed to be a dict using field database column
-        names as keys. Decodes values using value_from_db as well as
-        the standard convert_values.
+        names as keys. Decodes values using `value_from_db` as well as
+        the standard `convert_values`.
         """
         result = []
         for field in fields:
@@ -381,7 +382,7 @@ class NonrelCompiler(SQLCompiler):
             if value is NOT_PROVIDED:
                 value = field.get_default()
             else:
-                value = self.value_from_db(value, field)
+                value = self.ops.value_from_db(value, field)
                 value = self.query.convert_values(value, field,
                                                   self.connection)
             if value is None and not field.null:
@@ -494,12 +495,6 @@ class NonrelCompiler(SQLCompiler):
                 descending = not descending
             yield (opts.get_field(field), descending)
 
-    def value_for_db(self, value, field, lookup=None):
-        return self.ops.value_for_db(value, field, lookup)
-
-    def value_from_db(self, value, field):
-        return self.ops.value_from_db(value, field)
-
 
 class NonrelInsertCompiler(NonrelCompiler):
     """
@@ -533,14 +528,14 @@ class NonrelInsertCompiler(NonrelCompiler):
 
             # Prepare value for database, note that query.values have
             # already passed through get_db_prep_save.
-            value = self.value_for_db(value, field)
+            value = self.ops.value_for_db(value, field)
 
             field_values[field] = value
 
         key = self.insert(field_values, return_id=return_id)
 
         # Pass the key value through normal database deconversion.
-        return self.ops.convert_values(self.value_from_db(key, pk), pk)
+        return self.ops.convert_values(self.ops.value_from_db(key, pk), pk)
 
     def insert(self, values, return_id):
         """
@@ -548,7 +543,7 @@ class NonrelInsertCompiler(NonrelCompiler):
 
         Note that the returned key will go through the same database
         deconversions that every value coming from the database does
-        (convert_values and value_from_db).
+        (`convert_values` and `value_from_db`).
 
         :param values: The model object as a list of (field, value)
                        pairs; each value is already prepared for the
@@ -569,7 +564,7 @@ class NonrelUpdateCompiler(NonrelCompiler):
             else:
                 value = field.get_db_prep_save(value,
                                                connection=self.connection)
-            value = self.value_for_db(value, field)
+            value = self.ops.value_for_db(value, field)
             values.append((field, value))
         return self.update(values)
 
