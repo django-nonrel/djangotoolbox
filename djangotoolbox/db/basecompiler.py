@@ -86,7 +86,9 @@ class NonrelQuery(object):
         Reorders query results or execution order. Called by
         NonrelCompilers during query building.
 
-        :param ordering: A list with (field, descending) tuples
+        :param ordering: A list with (field, ascending) tuples or a
+                         boolean -- use natural ordering, if any, when
+                         the argument is True and its reverse otherwise
         """
         raise NotImplementedError
 
@@ -295,13 +297,11 @@ class NonrelQuery(object):
         return result
 
     def _order_in_memory(self, lhs, rhs):
-        for field, descending in self.compiler._get_ordering():
+        for field, ascending in self.compiler._get_ordering():
             column = field.column
             result = cmp(lhs.get(column), rhs.get(column))
-            if descending:
-                result *= -1
             if result != 0:
-                return result
+                return result if ascending else -result
         return 0
 
 
@@ -474,11 +474,22 @@ class NonrelCompiler(SQLCompiler):
         return fields
 
     def _get_ordering(self):
+        """
+        Returns a list of (field, ascending) tuples that the query
+        results should be ordered by. If there is no field ordering
+        defined returns just the standard_ordering (a boolean, needed
+        for MongoDB "$natural" ordering).
+        """
         opts = self.query.get_meta()
         if not self.query.default_ordering:
             ordering = self.query.order_by
         else:
             ordering = self.query.order_by or opts.ordering
+
+        if not ordering:
+            return self.query.standard_ordering
+
+        field_ordering = []
         for order in ordering:
             if LOOKUP_SEP in order:
                 raise DatabaseError("Ordering can't span tables on "
@@ -486,14 +497,17 @@ class NonrelCompiler(SQLCompiler):
             if order == '?':
                 raise DatabaseError("Randomized ordering isn't supported by "
                                     "the backend.")
-            order = order.lstrip('+')
-            descending = order.startswith('-')
-            field = order.lstrip('-')
-            if field == 'pk':
-                field = opts.pk.name
+
+            ascending = not order.startswith('-')
             if not self.query.standard_ordering:
-                descending = not descending
-            yield (opts.get_field(field), descending)
+                ascending = not ascending
+
+            name = order.lstrip('+-')
+            if name == 'pk':
+                name = opts.pk.name
+
+            field_ordering.append((opts.get_field(name), ascending))
+        return field_ordering
 
 
 class NonrelInsertCompiler(NonrelCompiler):
