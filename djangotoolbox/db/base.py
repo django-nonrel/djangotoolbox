@@ -193,8 +193,7 @@ class NonrelDatabaseOperations(BaseDatabaseOperations):
                        lookup type name, when its going to be used as a
                        filter argument
         """
-
-        field, field_kind, db_type = self._convert_as(field)
+        field, field_kind, db_type = self._convert_as(field, lookup)
 
         # Argument to the "isnull" lookup is just a boolean, while some
         # other lookups take a list of values.
@@ -217,7 +216,7 @@ class NonrelDatabaseOperations(BaseDatabaseOperations):
         """
         return self._value_from_db(value, *self._convert_as(field))
 
-    def _convert_as(self, field):
+    def _convert_as(self, field, lookup=None):
         """
         Computes parameters that should be used for preparing the field
         for the database or deconverting a database value for it.
@@ -229,6 +228,12 @@ class NonrelDatabaseOperations(BaseDatabaseOperations):
         if field.rel is not None:
             field = field.rel.get_related_field()
         field_kind = field.get_internal_type()
+
+        # Values for standard month / day queries are integers.
+        if (field_kind in ('DateField', 'DateTimeField') and
+                lookup in ('month', 'day')):
+            db_type = 'integer'
+
         return field, field_kind, db_type
 
     def _value_for_db(self, value, field, field_kind, db_type, lookup):
@@ -374,7 +379,8 @@ class NonrelDatabaseOperations(BaseDatabaseOperations):
         If an unknown db_type is specified, returns a generator
         yielding converted elements / pairs with converted values.
         """
-        subfield, subkind, db_subtype = self._convert_as(field.item_field)
+        subfield, subkind, db_subtype = self._convert_as(field.item_field,
+                                                         lookup)
 
         # Do convert filter parameters.
         if lookup:
@@ -504,7 +510,7 @@ class NonrelDatabaseOperations(BaseDatabaseOperations):
         # TODO/XXX: Arguments order due to Python 2.5 compatibility.
         value = (
             (subfield.column, self._value_for_db(
-                subvalue, lookup=lookup, *self._convert_as(subfield)))
+                subvalue, lookup=lookup, *self._convert_as(subfield, lookup)))
             for subfield, subvalue in value.iteritems())
 
         # Cast to a dict, interleave columns with values on a list,
