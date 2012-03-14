@@ -281,6 +281,11 @@ class NonrelDatabaseOperations(BaseDatabaseOperations):
         # functional proxy.
         # This code relies on unicode cast in django.utils.functional
         # just evaluating the wrapped function and doing nothing more.
+        # TODO: This has been partially fixed in vanilla with:
+        #       https://code.djangoproject.com/changeset/17698, however
+        #       still fails for proxies in lookups; reconsider in 1.4.
+        #       Also research cases of database operations not done
+        #       through the sql.Query.
         if isinstance(value, Promise):
             value = unicode(value)
 
