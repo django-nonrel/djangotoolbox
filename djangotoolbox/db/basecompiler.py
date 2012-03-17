@@ -522,34 +522,30 @@ class NonrelInsertCompiler(NonrelCompiler):
     """
 
     def execute_sql(self, return_id=False):
-        field_values = {}
-        pk = self.query.get_meta().pk
-        for (field, value), column in zip(self.query.values,
-                                          self.query.columns):
-
-            # Raise an exception for non-nullable fields without a value.
-            if field is not None:
-                if not field.null and value is None:
+        to_insert = []
+        pk_field = self.query.get_meta().pk
+        for obj in self.query.objs:
+            field_values = {}
+            for field in self.query.fields:
+                value = field.get_db_prep_save(
+                    getattr(obj, field.attname) if self.query.raw else field.pre_save(obj, obj._state.adding),
+                    connection=self.connection
+                )
+                if value is None and not field.null and not field.primary_key:
                     raise IntegrityError("You can't set %s (a non-nullable "
                                          "field) to None!" % field.name)
 
-            # Use the primary key field when our sql.Query provides a
-            # value without a field.
-            if field is None:
-                field = pk
-            assert field.column == column
-            assert field not in field_values
+                # Prepare value for database, note that query.values have
+                # already passed through get_db_prep_save.
+                value = self.ops.value_for_db(value, field)
 
-            # Prepare value for database, note that query.values have
-            # already passed through get_db_prep_save.
-            value = self.ops.value_for_db(value, field)
+                field_values[field.column] = value
+            to_insert.append(field_values)
 
-            field_values[field] = value
-
-        key = self.insert(field_values, return_id=return_id)
+        key = self.insert(to_insert, return_id=return_id)
 
         # Pass the key value through normal database deconversion.
-        return self.ops.convert_values(self.ops.value_from_db(key, pk), pk)
+        return self.ops.convert_values(self.ops.value_from_db(key, pk_field), pk_field)
 
     def insert(self, values, return_id):
         """

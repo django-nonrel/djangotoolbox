@@ -89,10 +89,6 @@ class NonrelDatabaseOperations(BaseDatabaseOperations):
           `RelatedField.get_db_prep_lookup`).
     """
 
-    def __init__(self, connection):
-        self.connection = connection
-        super(NonrelDatabaseOperations, self).__init__()
-
     def pk_default_value(self):
         """
         Returns None, to be interpreted by back-ends as a request to
