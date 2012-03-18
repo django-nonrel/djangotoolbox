@@ -3,11 +3,14 @@ from django.core.cache import cache
 from django.contrib.sites.models import Site
 from djangotoolbox.utils import make_tls_property
 
+
 _default_site_id = getattr(settings, 'SITE_ID', None)
 SITE_ID = settings.__class__.SITE_ID = make_tls_property()
 
+
 class DynamicSiteIDMiddleware(object):
-    """Sets settings.SITE_ID based on request's domain"""
+    """Sets settings.SITE_ID based on request's domain."""
+
     def process_request(self, request):
         # Ignore port if it's 80 or 443
         if ':' in request.get_host():
@@ -55,4 +58,4 @@ class DynamicSiteIDMiddleware(object):
             else:
                 SITE_ID.value = _default_site_id
 
-            cache.set(cache_key, SITE_ID.value, 5*60)
+            cache.set(cache_key, SITE_ID.value, 5 * 60)
