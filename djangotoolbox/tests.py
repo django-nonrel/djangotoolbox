@@ -252,17 +252,18 @@ class IterableFieldsTest(TestCase):
 
     def test_list_with_foreignkeys(self):
 
+        class ReferenceList(models.Model):
+            keys =  ListField(models.ForeignKey('Model'))
+
         class Model(models.Model):
             pass
 
-        class ReferenceList(models.Model):
-            keys = ListField(models.ForeignKey(Model))
-
         model1 = Model.objects.create()
         model2 = Model.objects.create()
-        rl = ReferenceList.objects.create(keys=[model1.pk, model2.pk])
+        ReferenceList.objects.create(keys=[model1.pk, model2.pk])
+
         self.assertEqual(ReferenceList.objects.get().keys[0], model1.pk)
-        self.assertEqual(len(ReferenceList.objects.filter(keys=model1.pk)), 1)
+        self.assertEqual(ReferenceList.objects.filter(keys=model1.pk).count(), 1)
 
     def test_list_with_foreign_conversion(self):
         decimal = DecimalKey.objects.create(decimal=Decimal('1.5'))
@@ -693,7 +694,7 @@ class FeaturesTest(TestCase):
         source = Source.objects.create(index=2, target=target)
         targets = Target.objects.all()
         with self.assertRaises(DatabaseError):
-            sources = Source.objects.get(target__in=targets)
+            Source.objects.get(target__in=targets)
         self.assertEqual(
             Source.objects.get(target__in=list(targets)),
             source)
