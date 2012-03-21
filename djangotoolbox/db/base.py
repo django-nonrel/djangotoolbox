@@ -119,6 +119,25 @@ class NonrelDatabaseOperations(BaseDatabaseOperations):
         """
         return value
 
+    def value_to_db_auto(self, value):
+        """
+        Assuming that the database has its own key type, leaves any
+        conversions to the back-end.
+
+        This method is added my nonrel to allow various types to be
+        used for automatic primary keys. `AutoField.get_db_prep_value`
+        calls it to prepare field's value for the database.
+
+        Note that Django can pass a string representation of the value
+        instead of the value itself (after receiving it as a query
+        parameter for example), so you'll likely need to limit
+        your `AutoFields` in a way that makes `str(value)` reversible.
+
+        TODO: This could become a part of `value_for_db` if it makes
+              to Django (with a `field_kind` condition).
+        """
+        return value
+
     def value_to_db_date(self, value):
         """
         Unlike with SQL database clients, it's better to assume that
