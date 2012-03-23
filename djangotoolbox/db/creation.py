@@ -45,7 +45,6 @@ class NonrelDatabaseCreation(BaseDatabaseCreation):
         'TextField':                  'string',
         'TimeField':                  'time',
         'URLField':                   'string',
-        'XMLField':                   'string',
 
         # You may use "list" for SetField, or even DictField and
         # EmbeddedModelField (if your database supports nested lists).
