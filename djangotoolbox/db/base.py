@@ -403,6 +403,9 @@ class NonrelDatabaseOperations(BaseDatabaseOperations):
 
         # Do convert filter parameters.
         if lookup:
+            # Special case where we are looking for an empty list
+            if lookup == 'exact' and db_type == 'list' and value == u'[]':
+                return []
             value = self._value_for_db(value, subfield,
                                        subkind, db_subtype, lookup)
 
