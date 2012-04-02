@@ -1,5 +1,6 @@
 from __future__ import with_statement
 from decimal import Decimal, InvalidOperation
+import time
 
 from django.core import serializers
 from django.db import models
@@ -232,6 +233,7 @@ class IterableFieldsTest(TestCase):
         dt = item.auto_now['a']
         self.assertNotEqual(dt, None)
         item.save()
+        time.sleep(0.5) # Sleep to avoid false positive failure on the assertion below
         self.assertGreater(DictModel.objects.get().auto_now['a'], dt)
         item.delete()
 
