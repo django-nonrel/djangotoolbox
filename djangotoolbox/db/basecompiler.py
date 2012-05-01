@@ -271,7 +271,7 @@ class NonrelQuery(object):
                 entity_value = entity[field.column]
 
                 if entity_value is None:
-                    if isinstance(value, (datetime.datetime, datetime.date,
+                    if isinstance(lookup_value, (datetime.datetime, datetime.date,
                                           datetime.time)):
                         submatch = lookup_type in ('lt', 'lte')
                     elif lookup_type in (
