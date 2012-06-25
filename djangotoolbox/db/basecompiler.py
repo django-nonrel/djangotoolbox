@@ -15,8 +15,8 @@ from django.utils.tree import Node
 EMULATED_OPS = {
     'exact': lambda x, y: y in x if isinstance(x, (list, tuple)) else x == y,
     'iexact': lambda x, y: x.lower() == y.lower(),
-    'startswith': lambda x, y: x.startswith(y),
-    'istartswith': lambda x, y: x.lower().startswith(y.lower()),
+    'startswith': lambda x, y: x.startswith(y[0]),
+    'istartswith': lambda x, y: x.lower().startswith(y[0].lower()),
     'isnull': lambda x, y: x is None if y else x is not None,
     'in': lambda x, y: x in y,
     'lt': lambda x, y: x < y,
