@@ -20,4 +20,4 @@ use the `nonrel permission backend`_.
 .. _djangotoolbox: http://www.allbuttonspressed.com/projects/djangotoolbox
 .. _Django-nonrel: http://www.allbuttonspressed.com/projects/django-nonrel
 .. _Writing a non-relational Django backend: http://www.allbuttonspressed.com/blog/django/2010/04/Writing-a-non-relational-Django-backend
-.. _nonrel permission backend: https://bitbucket.org/fhahn/django-permission-backend-nonrel
+.. _nonrel permission backend: https://github.com/django-nonrel/django-permission-backend-nonrel
