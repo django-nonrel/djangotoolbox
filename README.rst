@@ -1,6 +1,8 @@
 Djangotoolbox, a common API for running Django on non-relational/NoSQL databases
 =========================================================
 
+Documentation at http://djangotoolbox.readthedocs.org/
+
 In ``djangotoolbox.db`` you can find base classes for writing
 non-relational DB backends. Read
 `Writing a non-relational Django backend`_
