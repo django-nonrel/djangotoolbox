@@ -1,12 +1,11 @@
 # All fields except for BlobField written by Jonas Haag <jonas@lophus.org>
 
 from django.core.exceptions import ValidationError
-from django.utils.importlib import import_module
 from django.db import models
 from django.db.models.fields.subclassing import Creator
 from django.db.utils import IntegrityError
+from django.utils.importlib import import_module
 from django.db.models.fields.related import add_lazy_relation
-
 
 __all__ = ('RawField', 'ListField', 'SetField', 'DictField',
            'EmbeddedModelField', 'BlobField')
@@ -82,7 +81,7 @@ class AbstractIterableField(models.Field):
 
         # If items' field uses SubfieldBase we also need to.
         item_metaclass = getattr(self.item_field, '__metaclass__', None)
-        if issubclass(item_metaclass, models.SubfieldBase):
+        if item_metaclass and issubclass(item_metaclass, models.SubfieldBase):
             setattr(cls, self.name, Creator(self))
 
         if isinstance(self.item_field, models.ForeignKey) and isinstance(self.item_field.rel.to, basestring):
@@ -255,7 +254,6 @@ class EmbeddedModelField(models.Field):
     def get_internal_type(self):
         return 'EmbeddedModelField'
 
-
     def _set_model(self, model):
         """
         Resolves embedded model class once the field knows the model it
@@ -279,7 +277,6 @@ class EmbeddedModelField(models.Field):
             add_lazy_relation(model, self, self.embedded_model, _resolve_lookup)
 
     model = property(lambda self: self._model, _set_model)
-
 
     def stored_model(self, column_values):
         """
@@ -337,7 +334,9 @@ class EmbeddedModelField(models.Field):
         # Create the model instance.
         # Note: the double underline is not a typo -- this lets the
         # model know that the object already exists in the database.
-        return embedded_model(__entity_exists=True, **attribute_values)
+        result = embedded_model(**attribute_values)
+        result._state.adding = False
+        return result
 
     def get_db_prep_save(self, embedded_instance, connection):
         """
@@ -366,7 +365,7 @@ class EmbeddedModelField(models.Field):
         # fields, create the field => value mapping to be passed to
         # storage preprocessing.
         field_values = {}
-        add = not embedded_instance._entity_exists
+        add = embedded_instance._state.adding
         for field in embedded_instance._meta.fields:
             value = field.get_db_prep_save(
                 field.pre_save(embedded_instance, add), connection=connection)
@@ -392,7 +391,7 @@ class EmbeddedModelField(models.Field):
 
         # This instance will exist in the database soon.
         # TODO.XXX: Ensure that this doesn't cause race conditions.
-        embedded_instance._entity_exists = True
+        embedded_instance._state.adding = False
 
         return field_values
 

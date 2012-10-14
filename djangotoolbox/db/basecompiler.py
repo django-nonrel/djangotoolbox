@@ -522,32 +522,30 @@ class NonrelInsertCompiler(NonrelCompiler):
     """
 
     def execute_sql(self, return_id=False):
-        field_values = {}
+        docs = []
         pk = self.query.get_meta().pk
-        for (field, value), column in zip(self.query.values,
-                                          self.query.columns):
-
-            # Raise an exception for non-nullable fields without a value.
-            if field is not None:
-                if not field.null and value is None:
+        for obj in self.query.objs:
+            doc = {}
+            for field in self.query.fields:
+                value = field.get_db_prep_save(
+                    getattr(obj, field.attname) if self.query.raw else field.pre_save(obj, obj._state.adding),
+                    connection=self.connection
+                )
+                if not field.null and value is None and not field.primary_key:
                     raise IntegrityError("You can't set %s (a non-nullable "
                                          "field) to None!" % field.name)
 
-            # Use the primary key field when our sql.Query provides a
-            # value without a field.
-            if field is None:
-                field = pk
-            assert field.column == column
-            assert field not in field_values
+                #db_type = field.db_type(connection=self.connection)
+                #value = self.convert_value_for_db(db_type, value)
 
-            # Prepare value for database, note that query.values have
-            # already passed through get_db_prep_save.
-            value = self.ops.value_for_db(value, field)
+                # Prepare value for database, note that query.values have
+                # already passed through get_db_prep_save.
+                value = self.ops.value_for_db(value, field)
+                doc[field.column] = value
 
-            field_values[field] = value
+            docs.append(doc)
 
-        key = self.insert(field_values, return_id=return_id)
-
+        key = self.insert(docs, return_id=return_id)
         # Pass the key value through normal database deconversion.
         return self.ops.convert_values(self.ops.value_from_db(key, pk), pk)
 
