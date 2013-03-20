@@ -46,6 +46,7 @@ class NonrelDatabaseFeatures(BaseDatabaseFeatures):
              'AbstractIterableField', 'ListField', 'SetField', 'DictField',
              'EmbeddedModelField', 'BlobField'))
 
+    @property
     def supports_transactions(self):
         return False
 
