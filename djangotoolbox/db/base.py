@@ -17,6 +17,8 @@ from .creation import NonrelDatabaseCreation
 
 
 class NonrelDatabaseFeatures(BaseDatabaseFeatures):
+    # Most NoSQL databases don't have true transaction support.
+    supports_transactions = False
 
     # NoSQL databases usually return a key after saving a new object.
     can_return_id_from_insert = True
@@ -45,11 +47,6 @@ class NonrelDatabaseFeatures(BaseDatabaseFeatures):
         set(('ForeignKey', 'OneToOneField', 'ManyToManyField', 'RawField',
              'AbstractIterableField', 'ListField', 'SetField', 'DictField',
              'EmbeddedModelField', 'BlobField'))
-
-    @property
-    def supports_transactions(self):
-        return False
-
 
 class NonrelDatabaseOperations(BaseDatabaseOperations):
     """
