@@ -1,7 +1,7 @@
 import datetime
-import random
 
 from django.conf import settings
+from django.db.models.constants import LOOKUP_SEP
 from django.db.models.fields import NOT_PROVIDED
 from django.db.models.query import QuerySet
 from django.db.models.sql import aggregates as sqlaggregates
@@ -491,7 +491,7 @@ class NonrelCompiler(SQLCompiler):
 
         field_ordering = []
         for order in ordering:
-            if '.' in order:
+            if LOOKUP_SEP in order:
                 raise DatabaseError("Ordering can't span tables on "
                                     "non-relational backends (%s)." % order)
             if order == '?':
