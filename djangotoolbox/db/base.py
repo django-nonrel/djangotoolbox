@@ -94,9 +94,6 @@ class NonrelDatabaseOperations(BaseDatabaseOperations):
         """
         return None
 
-    def validate_autopk_value(self, value):
-        return value
-
     def quote_name(self, name):
         """
         Does not do any quoting, as it is not needed for most NoSQL
