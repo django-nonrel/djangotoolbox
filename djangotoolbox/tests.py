@@ -744,3 +744,70 @@ class DecimalFieldTest(TestCase):
             DecimalModel.objects.filter(decimal__lt=1)[0]
         except InvalidOperation:
             self.assertTrue(False)
+
+
+class DeleteModel(models.Model):
+    key = models.IntegerField(primary_key=True)
+    deletable = models.BooleanField()
+
+class BasicDeleteTest(TestCase):
+
+    def setUp(self):
+        for i in range(1, 10):
+            DeleteModel(key=i, deletable=i % 2 == 0).save()
+
+    def test_model_delete(self):
+        d = DeleteModel.objects.get(pk=1)
+        d.delete()
+
+        with self.assertRaises(DeleteModel.DoesNotExist):
+            DeleteModel.objects.get(pk=1)
+
+    def test_delete_all(self):
+        DeleteModel.objects.all().delete()
+
+        self.assertEquals(0, DeleteModel.objects.all().count())
+
+    def test_delete_filtered(self):
+        DeleteModel.objects.filter(deletable=True).delete()
+
+        self.assertEquals(5, DeleteModel.objects.all().count())
+
+
+class M2MDeleteChildModel(models.Model):
+    key = models.IntegerField(primary_key=True)
+
+class M2MDeleteModel(models.Model):
+    key = models.IntegerField(primary_key=True)
+    deletable = models.BooleanField()
+    children = models.ManyToManyField(M2MDeleteChildModel, blank=True)
+
+class ManyToManyDeleteTest(TestCase):
+    """
+    Django-nonrel doesn't support many-to-many, but there may be
+    models that are used which contain them, even if they're not
+    accessed. This test ensures they can be deleted.
+    """
+
+    def setUp(self):
+        for i in range(1, 10):
+            M2MDeleteModel(key=i, deletable=i % 2 == 0).save()
+
+    def test_model_delete(self):
+        d = M2MDeleteModel.objects.get(pk=1)
+        d.delete()
+
+        with self.assertRaises(M2MDeleteModel.DoesNotExist):
+            M2MDeleteModel.objects.get(pk=1)
+
+    @expectedFailure
+    def test_delete_all(self):
+        M2MDeleteModel.objects.all().delete()
+
+        self.assertEquals(0, M2MDeleteModel.objects.all().count())
+
+    @expectedFailure
+    def test_delete_filtered(self):
+        M2MDeleteModel.objects.filter(deletable=True).delete()
+
+        self.assertEquals(5, M2MDeleteModel.objects.all().count())
