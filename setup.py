@@ -9,7 +9,7 @@ except:
     pass
 
 CLASSIFIERS = [
-    'Development Status :: 4 - Beta',
+    'Development Status :: 5 - Production/Stable',
     'Intended Audience :: Developers',
     'Operating System :: OS Independent',
     'Programming Language :: Python',
@@ -23,11 +23,11 @@ setup(name='djangotoolbox',
       packages=find_packages(exclude=('tests', 'tests.*')),
       author='Waldemar Kornewald',
       author_email='wkornewald@gmail.com',
-      url='http://www.allbuttonspressed.com/projects/djangotoolbox',
+      url='http://www.django-nonrel.org/',
       description=DESCRIPTION,
       long_description=LONG_DESCRIPTION,
       platforms=['any'],
       classifiers=CLASSIFIERS,
       install_requires=[],
-      version='0.9.2',
+      version='1.4.0',
 )
