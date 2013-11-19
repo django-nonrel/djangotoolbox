@@ -29,5 +29,5 @@ setup(name='djangotoolbox',
       platforms=['any'],
       classifiers=CLASSIFIERS,
       install_requires=[],
-      version='1.5.0',
+      version='1.6.0',
 )
