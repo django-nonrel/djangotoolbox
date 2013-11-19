@@ -811,3 +811,22 @@ class ManyToManyDeleteTest(TestCase):
         M2MDeleteModel.objects.filter(deletable=True).delete()
 
         self.assertEquals(5, M2MDeleteModel.objects.all().count())
+
+
+class QuerysetModel(models.Model):
+    key = models.IntegerField(primary_key=True)
+
+class QuerysetTest(TestCase):
+    """
+    Django 1.6 changes how
+    """
+
+    def setUp(self):
+        for i in range(10):
+            QuerysetModel.objects.create(key=i + 1)
+
+    def test_all(self):
+        self.assertEqual(10, len(QuerysetModel.objects.all()))
+
+    def test_none(self):
+        self.assertEqual(0, len(QuerysetModel.objects.none()))
