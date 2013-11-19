@@ -1,8 +1,15 @@
 from django.test import TestCase
-from django.test.simple import DjangoTestSuiteRunner
 from django.utils.unittest import TextTestRunner
 
+try:
+    from django.test.runner import DiscoverRunner as TestRunner
+except ImportError:
+    from django.test.simple import DjangoTestSuiteRunner as TestRunner
+
 from .utils import object_list_to_table
+
+import re
+import unittest
 
 
 class ModelTestCase(TestCase):
@@ -47,7 +54,7 @@ class ModelTestCase(TestCase):
             self.fail("DB state not valid.")
 
 
-class CapturingTestSuiteRunner(DjangoTestSuiteRunner):
+class CapturingTestSuiteRunner(TestRunner):
     """
     Captures stdout/stderr during test and shows them next to
     tracebacks.
@@ -57,3 +64,48 @@ class CapturingTestSuiteRunner(DjangoTestSuiteRunner):
         return TextTestRunner(verbosity=self.verbosity,
                               failfast=self.failfast,
                               buffer=True).run(suite)
+
+_EXPECTED_ERRORS = [
+    r"This query is not supported by the database\.",
+    r"Multi-table inheritance is not supported by non-relational DBs\.",
+    r"TextField is not indexed, by default, so you can't filter on it\.",
+    r"First ordering property must be the same as inequality filter property",
+    r"This database doesn't support filtering on non-primary key ForeignKey fields\.",
+    r"Only AND filters are supported\.",
+    r"MultiQuery does not support keys_only\.",
+    r"You can't query against more than 30 __in filter value combinations\.",
+    r"Only strings and positive integers may be used as keys on GAE\.",
+    r"This database does not support <class '.*'> aggregates\.",
+    r"Subqueries are not supported \(yet\)\.",
+    r"Cursors are not supported\.",
+    r"This database backend only supports count\(\) queries on the primary key\.",
+]
+
+
+class NonrelTestResult(unittest.TextTestResult):
+    def __init__(self, *args, **kwargs):
+        super(NonrelTestResult, self).__init__(*args, **kwargs)
+        self._compiled_exception_matchers = [re.compile(expr) for expr in _EXPECTED_ERRORS]
+
+    def __match_exception(self, exc):
+        for exc_match in self._compiled_exception_matchers:
+            if exc_match.search(str(exc)):
+                return True
+        return False
+
+    def addError(self, test, err):
+        exc = err[1]
+        if self.__match_exception(exc):
+            super(NonrelTestResult, self).addExpectedFailure(test, err)
+        else:
+            super(NonrelTestResult, self).addError(test, err)
+
+
+class NonrelTestSuiteRunner(TestRunner):
+    def run_suite(self, suite, **kwargs):
+        return unittest.TextTestRunner(
+            verbosity=self.verbosity,
+            failfast=self.failfast,
+            resultclass=NonrelTestResult,
+            buffer=False
+        ).run(suite)
