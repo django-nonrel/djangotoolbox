@@ -48,6 +48,11 @@ class NonrelDatabaseFeatures(BaseDatabaseFeatures):
              'AbstractIterableField', 'ListField', 'SetField', 'DictField',
              'EmbeddedModelField', 'BlobField'))
 
+    # Django 1.4 compatibility
+    def _supports_transactions(self):
+        return False
+
+
 class NonrelDatabaseOperations(BaseDatabaseOperations):
     """
     Override all database conversions normally done by fields (through

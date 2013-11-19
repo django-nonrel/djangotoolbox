@@ -1,7 +1,7 @@
 import datetime
 
+import django
 from django.conf import settings
-from django.db.models.constants import LOOKUP_SEP
 from django.db.models.fields import NOT_PROVIDED
 from django.db.models.query import QuerySet
 from django.db.models.sql import aggregates as sqlaggregates
@@ -11,6 +11,13 @@ from django.db.models.sql.where import AND, OR
 from django.db.utils import DatabaseError, IntegrityError
 from django.utils.tree import Node
 from django.db import connections
+
+
+if django.VERSION >= (1, 5):
+    from django.db.models.constants import LOOKUP_SEP
+else:
+    from django.db.models.sql.constants import LOOKUP_SEP
+
 
 EMULATED_OPS = {
     'exact': lambda x, y: y in x if isinstance(x, (list, tuple)) else x == y,
