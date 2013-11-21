@@ -10,7 +10,7 @@ from django.db.models.sql.constants import MULTI, SINGLE
 from django.db.models.sql.where import AND, OR
 from django.db.utils import DatabaseError, IntegrityError
 from django.utils.tree import Node
-
+from django.db import connections
 
 EMULATED_OPS = {
     'exact': lambda x, y: y in x if isinstance(x, (list, tuple)) else x == y,
@@ -431,7 +431,7 @@ class NonrelCompiler(SQLCompiler):
         query.order_by(self._get_ordering())
 
         # This at least satisfies the most basic unit tests.
-        if settings.DEBUG:
+        if connections[self.using].use_debug_cursor or (connections[self.using].use_debug_cursor is None and settings.DEBUG):
             self.connection.queries.append({'sql': repr(query)})
         return query
 
