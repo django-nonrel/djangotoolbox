@@ -1,6 +1,11 @@
 Changelog
 =========
 
+Version 1.5.0
+-------------
+
+* Added support for Django 1.5
+
 Version 1.4.0
 -------------
 
