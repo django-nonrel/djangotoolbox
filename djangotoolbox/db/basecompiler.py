@@ -447,7 +447,7 @@ class NonrelCompiler(SQLCompiler):
         required in most situations) or using the SQL-specific
         `QuerySet.extra()` to not work with nonrel back-ends.
         """
-        if self.query.is_empty():
+        if hasattr(self.query, 'is_empty') and self.query.is_empty():
             raise EmptyResultSet()
         if (len([a for a in self.query.alias_map if
                  self.query.alias_refcount[a]]) > 1 or
