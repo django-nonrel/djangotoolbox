@@ -79,6 +79,7 @@ _EXPECTED_ERRORS = [
     r"Subqueries are not supported \(yet\)\.",
     r"Cursors are not supported\.",
     r"This database backend only supports count\(\) queries on the primary key\.",
+    r"AutoField \(default primary key\) values must be strings representing an ObjectId on MongoDB",
 ]
 
 
