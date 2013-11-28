@@ -1,4 +1,4 @@
-djangotoolbox_ provides a common API for running Django on
+Djangotoolbox provides a common API for running Django on
 non-relational/NoSQL databases (currently via Django-nonrel_).
 
 In ``djangotoolbox.db`` you can find base classes for writing
@@ -17,7 +17,6 @@ Simply add ``'djangotoolbox'`` to ``INSTALLED_APPS`` **after**
 require JOINs. If you still need permission handling you should
 use the `nonrel permission backend`_.
 
-.. _djangotoolbox: http://www.allbuttonspressed.com/projects/djangotoolbox
-.. _Django-nonrel: http://www.allbuttonspressed.com/projects/django-nonrel
+.. _Django-nonrel: http://django-nonrel.org/
 .. _Writing a non-relational Django backend: http://www.allbuttonspressed.com/blog/django/2010/04/Writing-a-non-relational-Django-backend
 .. _nonrel permission backend: https://github.com/django-nonrel/django-permission-backend-nonrel
