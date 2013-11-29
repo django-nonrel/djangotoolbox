@@ -17,6 +17,7 @@ setup(name='djangotoolbox',
       url='https://github.com/django-nonrel/djangotoolbox',
       packages=find_packages(),
       license='3-clause BSD',
+      zip_safe=False,
       classifiers=[
           'Development Status :: 5 - Production/Stable',
           'Environment :: Web Environment',
