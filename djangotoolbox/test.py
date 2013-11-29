@@ -1,5 +1,5 @@
 from django.test import TestCase
-from django.utils.unittest import TextTestRunner
+from django.utils.unittest import TextTestResult, TextTestRunner
 
 try:
     from django.test.runner import DiscoverRunner as TestRunner
@@ -9,7 +9,6 @@ except ImportError:
 from .utils import object_list_to_table
 
 import re
-import unittest
 
 
 class ModelTestCase(TestCase):
@@ -83,7 +82,7 @@ _EXPECTED_ERRORS = [
 ]
 
 
-class NonrelTestResult(unittest.TextTestResult):
+class NonrelTestResult(TextTestResult):
     def __init__(self, *args, **kwargs):
         super(NonrelTestResult, self).__init__(*args, **kwargs)
         self._compiled_exception_matchers = [re.compile(expr) for expr in _EXPECTED_ERRORS]
@@ -104,7 +103,7 @@ class NonrelTestResult(unittest.TextTestResult):
 
 class NonrelTestSuiteRunner(TestRunner):
     def run_suite(self, suite, **kwargs):
-        return unittest.TextTestRunner(
+        return TextTestRunner(
             verbosity=self.verbosity,
             failfast=self.failfast,
             resultclass=NonrelTestResult,
