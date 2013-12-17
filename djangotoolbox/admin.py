@@ -16,7 +16,7 @@ class CustomUserAdmin(UserAdmin):
     fieldsets = None
     form = UserForm
     search_fields = ('=username',)
-
+    list_filter = ('is_staff', 'is_superuser', 'is_active')
 
 admin.site.unregister(User)
 admin.site.unregister(Group)
