@@ -1,6 +1,11 @@
 Changelog
 =========
 
+Version 1.6.2 (Dec 20, 2013)
+-------------
+
+* Fixed broken query in User admin
+
 Version 1.6.1 (Nov 29, 2013)
 -------------
 
