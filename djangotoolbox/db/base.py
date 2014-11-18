@@ -1,4 +1,4 @@
-import cPickle as pickle
+from django.utils.six.moves import cPickle as pickle
 import datetime
 
 from django.conf import settings
