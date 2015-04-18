@@ -191,10 +191,22 @@ class NonrelQuery(object):
 
         # TODO: Call get_db_prep_lookup directly, constraint.process
         #       doesn't do much more.
-        constraint, lookup_type, annotation, value = child
-        packed, value = constraint.process(lookup_type, value, self.connection)
-        alias, column, db_type = packed
-        field = constraint.field
+        # constraint, lookup_type, annotation, value = child
+        # packed, value = constraint.process(lookup_type, value, self.connection)
+        # alias, column, db_type = packed
+        # field = constraint.field
+
+        lhs, lhs_params = child.process_lhs(self.compiler, self.connection)
+        rhs, rhs_params = child.process_rhs(self.compiler, self.connection)
+
+        lookup_type = child.lookup_name
+        annotation = True  # No idea from where to pull this...
+        value = rhs_params
+
+        packed = child.lhs.get_group_by_cols()[0]
+        alias, column = packed
+        field = child.lhs.output_field
+        db_type = field.db_type(self.connection)
 
         opts = self.query.model._meta
         if alias and alias != opts.db_table:
