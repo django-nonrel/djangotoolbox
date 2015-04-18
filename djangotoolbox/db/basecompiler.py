@@ -43,7 +43,6 @@ else:
         else:
             return query.model._meta.fields
 
-
 EMULATED_OPS = {
     'exact': lambda x, y: y in x if isinstance(x, (list, tuple)) else x == y,
     'iexact': lambda x, y: x.lower() == y.lower(),
@@ -90,7 +89,7 @@ class NonrelQuery(object):
         self.compiler = compiler
         self.connection = compiler.connection
         self.ops = compiler.connection.ops
-        self.query = compiler.query # sql.Query
+        self.query = compiler.query  # sql.Query
         self.fields = fields
         self._negated = False
 
@@ -283,8 +282,7 @@ class NonrelQuery(object):
         result = []
         for child in children:
 
-            if SubqueryConstraint is not None \
-              and isinstance(child, SubqueryConstraint):
+            if SubqueryConstraint is not None and isinstance(child, SubqueryConstraint):
                 raise DatabaseError("Subqueries are not supported.")
 
             if isinstance(child, tuple):
@@ -418,8 +416,7 @@ class NonrelCompiler(SQLCompiler):
             aggregate = aggregates[0]
             assert isinstance(aggregate, sqlaggregates.Count)
             opts = self.query.get_meta()
-            if aggregate.col != '*' and \
-                aggregate.col != (opts.db_table, opts.pk.column):
+            if aggregate.col != '*' and aggregate.col != (opts.db_table, opts.pk.column):
                 raise DatabaseError("This database backend only supports "
                                     "count() queries on the primary key.")
 
@@ -471,9 +468,8 @@ class NonrelCompiler(SQLCompiler):
         """
         if hasattr(self.query, 'is_empty') and self.query.is_empty():
             raise EmptyResultSet()
-        if (len([a for a in self.query.alias_map if
-                 self.query.alias_refcount[a]]) > 1 or
-            self.query.distinct or self.query.extra or self.query.having):
+        if (len([a for a in self.query.alias_map if self.query.alias_refcount[a]]) > 1
+                or self.query.distinct or self.query.extra or self.query.having):
             raise DatabaseError("This query is not supported by the database.")
 
     def get_count(self, check_exists=False):
