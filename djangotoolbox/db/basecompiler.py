@@ -200,7 +200,17 @@ class NonrelQuery(object):
         rhs, rhs_params = child.process_rhs(self.compiler, self.connection)
 
         lookup_type = child.lookup_name
-        annotation = True  # No idea from where to pull this...
+
+        # Since NoSql databases generally don't support aggregation or 
+        # annotation we simply pass true in this case unless the query has a
+        # get_aggregation method defined. It's a little troubling however that 
+        # the _nomalize_lookup_value method seems to only use this value in the case
+        # that the value is an iterable and the lookup_type equals isnull.
+        if hasattr(self, 'get_aggregation'):
+            annotation = self.get_aggregation(using=self.connection)[None]
+        else:
+            annotation = True
+
         value = rhs_params
 
         packed = child.lhs.get_group_by_cols()[0]
