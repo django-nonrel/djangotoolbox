@@ -188,34 +188,35 @@ class NonrelQuery(object):
         leaf (a tuple).
         """
 
-        # TODO: Call get_db_prep_lookup directly, constraint.process
-        #       doesn't do much more.
-        # constraint, lookup_type, annotation, value = child
-        # packed, value = constraint.process(lookup_type, value, self.connection)
-        # alias, column, db_type = packed
-        # field = constraint.field
-
-        lhs, lhs_params = child.process_lhs(self.compiler, self.connection)
-        rhs, rhs_params = child.process_rhs(self.compiler, self.connection)
-
-        lookup_type = child.lookup_name
-
-        # Since NoSql databases generally don't support aggregation or 
-        # annotation we simply pass true in this case unless the query has a
-        # get_aggregation method defined. It's a little troubling however that 
-        # the _nomalize_lookup_value method seems to only use this value in the case
-        # that the value is an iterable and the lookup_type equals isnull.
-        if hasattr(self, 'get_aggregation'):
-            annotation = self.get_aggregation(using=self.connection)[None]
+        if django.VERSION < (1, 7):
+            # TODO: Call get_db_prep_lookup directly, constraint.process
+            #       doesn't do much more.
+            constraint, lookup_type, annotation, value = child
+            packed, value = constraint.process(lookup_type, value, self.connection)
+            alias, column, db_type = packed
+            field = constraint.field
         else:
-            annotation = True
+            lhs, lhs_params = child.process_lhs(self.compiler, self.connection)
+            rhs, rhs_params = child.process_rhs(self.compiler, self.connection)
 
-        value = rhs_params
+            lookup_type = child.lookup_name
 
-        packed = child.lhs.get_group_by_cols()[0]
-        alias, column = packed
-        field = child.lhs.output_field
-        db_type = field.db_type(self.connection)
+            # Since NoSql databases generally don't support aggregation or 
+            # annotation we simply pass true in this case unless the query has a
+            # get_aggregation method defined. It's a little troubling however that 
+            # the _nomalize_lookup_value method seems to only use this value in the case
+            # that the value is an iterable and the lookup_type equals isnull.
+            if hasattr(self, 'get_aggregation'):
+                annotation = self.get_aggregation(using=self.connection)[None]
+            else:
+                annotation = True
+
+            value = rhs_params
+
+            packed = child.lhs.get_group_by_cols()[0]
+            alias, column = packed
+            field = child.lhs.output_field
+            db_type = field.db_type(self.connection)
 
         opts = self.query.model._meta
         if alias and alias != opts.db_table:
