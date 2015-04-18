@@ -358,7 +358,13 @@ class NonrelQuery(object):
     def _order_in_memory(self, lhs, rhs):
         for field, ascending in self.compiler._get_ordering():
             column = field.column
-            result = cmp(lhs.get(column), rhs.get(column))
+
+            # TOOD: cmp is removed in python 3. Rewrite this logic to leverage
+            # the __eq__() special function.
+            a = lhs.get(column)
+            b = rhs.get(column)
+
+            result = (a > b) - (a < b)
             if result != 0:
                 return result if ascending else -result
         return 0
