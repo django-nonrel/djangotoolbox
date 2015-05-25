@@ -43,7 +43,6 @@ else:
         else:
             return query.model._meta.fields
 
-
 EMULATED_OPS = {
     'exact': lambda x, y: y in x if isinstance(x, (list, tuple)) else x == y,
     'iexact': lambda x, y: x.lower() == y.lower(),
@@ -90,7 +89,7 @@ class NonrelQuery(object):
         self.compiler = compiler
         self.connection = compiler.connection
         self.ops = compiler.connection.ops
-        self.query = compiler.query # sql.Query
+        self.query = compiler.query  # sql.Query
         self.fields = fields
         self._negated = False
 
@@ -189,12 +188,33 @@ class NonrelQuery(object):
         leaf (a tuple).
         """
 
-        # TODO: Call get_db_prep_lookup directly, constraint.process
-        #       doesn't do much more.
-        constraint, lookup_type, annotation, value = child
-        packed, value = constraint.process(lookup_type, value, self.connection)
-        alias, column, db_type = packed
-        field = constraint.field
+        if django.VERSION < (1, 7):
+            # TODO: Call get_db_prep_lookup directly, constraint.process
+            #       doesn't do much more.
+            constraint, lookup_type, annotation, value = child
+            packed, value = constraint.process(lookup_type, value, self.connection)
+            alias, column, db_type = packed
+            field = constraint.field
+        else:
+            rhs, rhs_params = child.process_rhs(self.compiler, self.connection)
+
+            lookup_type = child.lookup_name
+
+            # Since NoSql databases generally don't support aggregation or
+            # annotation we simply pass true in this case unless the query has a
+            # get_aggregation method defined. It's a little troubling however that
+            # the _nomalize_lookup_value method seems to only use this value in the case
+            # that the value is an iterable and the lookup_type equals isnull.
+            if hasattr(self, 'get_aggregation'):
+                annotation = self.get_aggregation(using=self.connection)[None]
+            else:
+                annotation = True
+
+            value = rhs_params
+
+            packed = child.lhs.get_group_by_cols()[0]
+            alias, column = packed
+            field = child.lhs.output_field
 
         opts = self.query.model._meta
         if alias and alias != opts.db_table:
@@ -261,8 +281,7 @@ class NonrelQuery(object):
         result = []
         for child in children:
 
-            if SubqueryConstraint is not None \
-              and isinstance(child, SubqueryConstraint):
+            if SubqueryConstraint is not None and isinstance(child, SubqueryConstraint):
                 raise DatabaseError("Subqueries are not supported.")
 
             if isinstance(child, tuple):
@@ -338,7 +357,13 @@ class NonrelQuery(object):
     def _order_in_memory(self, lhs, rhs):
         for field, ascending in self.compiler._get_ordering():
             column = field.column
-            result = cmp(lhs.get(column), rhs.get(column))
+
+            # TOOD: cmp is removed in python 3. Rewrite this logic to leverage
+            # the __eq__() special function.
+            a = lhs.get(column)
+            b = rhs.get(column)
+
+            result = (a > b) - (a < b)
             if result != 0:
                 return result if ascending else -result
         return 0
@@ -396,8 +421,7 @@ class NonrelCompiler(SQLCompiler):
             aggregate = aggregates[0]
             assert isinstance(aggregate, sqlaggregates.Count)
             opts = self.query.get_meta()
-            if aggregate.col != '*' and \
-                aggregate.col != (opts.db_table, opts.pk.column):
+            if aggregate.col != '*' and aggregate.col != (opts.db_table, opts.pk.column):
                 raise DatabaseError("This database backend only supports "
                                     "count() queries on the primary key.")
 
@@ -449,9 +473,8 @@ class NonrelCompiler(SQLCompiler):
         """
         if hasattr(self.query, 'is_empty') and self.query.is_empty():
             raise EmptyResultSet()
-        if (len([a for a in self.query.alias_map if
-                 self.query.alias_refcount[a]]) > 1 or
-            self.query.distinct or self.query.extra or self.query.having):
+        if (len([a for a in self.query.alias_map if self.query.alias_refcount[a]]) > 1
+                or self.query.distinct or self.query.extra or self.query.having):
             raise DatabaseError("This query is not supported by the database.")
 
     def get_count(self, check_exists=False):
