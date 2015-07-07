@@ -10,10 +10,8 @@ from django.db.backends import (
     BaseDatabaseValidation,
     BaseDatabaseIntrospection)
 from django.db.utils import DatabaseError
-from django.utils.functional import Promise
-from django.utils.safestring import EscapeString, EscapeUnicode, SafeString, \
-    SafeUnicode
 from django.utils import timezone
+from django.utils.encoding import smart_text
 
 from .creation import NonrelDatabaseCreation
 
@@ -316,27 +314,7 @@ class NonrelDatabaseOperations(BaseDatabaseOperations):
         if value is None:
             return None
 
-        # Force evaluation of lazy objects (e.g. lazy translation
-        # strings).
-        # Some back-ends pass values directly to the database driver,
-        # which may fail if it relies on type inspection and gets a
-        # functional proxy.
-        # This code relies on unicode cast in django.utils.functional
-        # just evaluating the wrapped function and doing nothing more.
-        # TODO: This has been partially fixed in vanilla with:
-        #       https://code.djangoproject.com/changeset/17698, however
-        #       still fails for proxies in lookups; reconsider in 1.4.
-        #       Also research cases of database operations not done
-        #       through the sql.Query.
-        if isinstance(value, Promise):
-            value = unicode(value)
-
-        # Django wraps strings marked as safe or needed escaping,
-        # convert them to just strings for type-inspecting back-ends.
-        if isinstance(value, (SafeString, EscapeString)):
-            value = str(value)
-        elif isinstance(value, (SafeUnicode, EscapeUnicode)):
-            value = unicode(value)
+        value = smart_text(value)
 
         # Convert elements of collection fields.
         if field_kind in ('ListField', 'SetField', 'DictField',):
@@ -661,7 +639,7 @@ class FakeConnection(object):
 
 
 class Database(object):
-    class Error(StandardError):
+    class Error(Exception):
         pass
 
     class InterfaceError(Error):
@@ -687,6 +665,7 @@ class Database(object):
 
     class NotSupportedError(DatabaseError):
         pass
+
 
 class NonrelDatabaseWrapper(BaseDatabaseWrapper):
 
