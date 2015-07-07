@@ -2,13 +2,23 @@ from django.utils.six.moves import cPickle as pickle
 import datetime
 
 from django.conf import settings
-from django.db.backends import (
-    BaseDatabaseFeatures,
-    BaseDatabaseOperations,
-    BaseDatabaseWrapper,
-    BaseDatabaseClient,
-    BaseDatabaseValidation,
-    BaseDatabaseIntrospection)
+
+# 1.8 Compatibility
+try:
+    from django.db.backends.base.base import BaseDatabaseWrapper
+    from django.db.backends.base.client import BaseDatabaseClient
+    from django.db.backends.base.features import BaseDatabaseFeatures
+    from django.db.backends.base.validation import BaseDatabaseValidation
+    from django.db.backends.base.introspection import BaseDatabaseIntrospection
+    from django.db.backends.base.operations import BaseDatabaseOperations
+except ImportError:
+    from django.db.backends import (
+        BaseDatabaseFeatures,
+        BaseDatabaseOperations,
+        BaseDatabaseWrapper,
+        BaseDatabaseClient,
+        BaseDatabaseValidation,
+        BaseDatabaseIntrospection)
 from django.db.utils import DatabaseError
 from django.utils import timezone
 from django.utils.encoding import smart_text

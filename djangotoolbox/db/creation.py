@@ -1,4 +1,8 @@
-from django.db.backends.creation import BaseDatabaseCreation
+# 1.8 Compatibility
+try:
+    from django.db.backends.base.creation import BaseDatabaseCreation
+except ImportError:
+    from django.db.backends.creation import BaseDatabaseCreation
 
 
 class NonrelDatabaseCreation(BaseDatabaseCreation):
