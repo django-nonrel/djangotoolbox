@@ -434,7 +434,7 @@ class NonrelCompiler(SQLCompiler):
                     raise DatabaseError("This database backend only supports "
                                         "count() queries on the primary key.")
             else:
-                if aggregate.input_field.value == '*' or aggregate.input_field == (opts.db_table, opts.pk.column):
+                if aggregate.input_field.value != '*' and aggregate.input_field != (opts.db_table, opts.pk.column):  # Fair warning: the latter part of this or statement hasn't been tested
                     raise DatabaseError("This database backend only supports "
                                         "count() queries on the primary key.")
 
