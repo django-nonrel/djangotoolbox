@@ -5,7 +5,7 @@ from django.conf import settings
 
 import django
 
-if django.VERSION >= (1, 8):
+if django.VERSION < (1, 8):
     from django.db.backends import (
         BaseDatabaseFeatures,
         BaseDatabaseOperations,
@@ -23,7 +23,10 @@ else:
 
 from django.db.utils import DatabaseError
 from django.utils import timezone
-from django.utils.encoding import smart_text
+try:
+    from django.utils.encoding import smart_text
+except ImportError:  # Django 1.4 compatibility
+    from django.utils.encoding import smart_unicode as smart_text
 
 from .creation import NonrelDatabaseCreation
 

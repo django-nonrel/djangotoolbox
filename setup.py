@@ -9,7 +9,7 @@ except:
     pass
 
 setup(name='djangotoolbox',
-    version='1.7.0',
+    version='1.8.0',
     description=DESCRIPTION,
     long_description=LONG_DESCRIPTION,
     author='Waldemar Kornewald',
