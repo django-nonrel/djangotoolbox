@@ -4,7 +4,6 @@ import django
 from django.conf import settings
 from django.db.models.fields import NOT_PROVIDED
 from django.db.models.query import QuerySet
-from django.db.models.sql import aggregates as sqlaggregates
 from django.db.models.sql.compiler import SQLCompiler
 from django.db.models.sql.constants import MULTI, SINGLE
 from django.db.models.sql.where import AND, OR
@@ -214,11 +213,11 @@ class NonrelQuery(object):
 
             packed = child.lhs.get_group_by_cols()[0]
 
-            if django.VERSION == (1, 7):
+            if django.VERSION < (1, 8):
                 alias, column = packed
             else:
                 alias = packed.alias
-                column = packed.target
+                column = packed.target.column
             field = child.lhs.output_field
 
         opts = self.query.model._meta
@@ -229,6 +228,10 @@ class NonrelQuery(object):
         # For parent.child_set queries the field held by the constraint
         # is the parent's primary key, while the field the filter
         # should consider is the child's foreign key field.
+        print("            alias:", alias, type(alias))
+        print("           column:", column, type(column))
+        print("     field.column:", field.column, type(field.column))
+        print("field.primary_key:", field.primary_key, type(field.primary_key))
         if column != field.column:
             if not field.primary_key:
                 raise DatabaseError("This database doesn't support filtering "
@@ -424,11 +427,20 @@ class NonrelCompiler(SQLCompiler):
         if aggregates:
             assert len(aggregates) == 1
             aggregate = aggregates[0]
-            assert isinstance(aggregate, sqlaggregates.Count)
+            if django.VERSION < (1, 8):
+                assert aggregate.sql_function == 'COUNT'
+            else:
+                assert aggregate.function == 'COUNT'
             opts = self.query.get_meta()
-            if aggregate.col != '*' and aggregate.col != (opts.db_table, opts.pk.column):
-                raise DatabaseError("This database backend only supports "
-                                    "count() queries on the primary key.")
+
+            if django.VERSION < (1, 8):
+                if aggregate.col != '*' and aggregate.col != (opts.db_table, opts.pk.column):
+                    raise DatabaseError("This database backend only supports "
+                                        "count() queries on the primary key.")
+            else:
+                if aggregate.input_field.value == '*' or aggregate.input_field == (opts.db_table, opts.pk.column):
+                    raise DatabaseError("This database backend only supports "
+                                        "count() queries on the primary key.")
 
             count = self.get_count()
             if result_type is SINGLE:
@@ -510,8 +522,12 @@ class NonrelCompiler(SQLCompiler):
         query.order_by(self._get_ordering())
 
         # This at least satisfies the most basic unit tests.
-        if connections[self.using].use_debug_cursor or (connections[self.using].use_debug_cursor is None and settings.DEBUG):
-            self.connection.queries.append({'sql': repr(query)})
+        if django.VERSION < (1, 8):
+            if connections[self.using].use_debug_cursor or (connections[self.using].use_debug_cursor is None and settings.DEBUG):
+                self.connection.queries.append({'sql': repr(query)})
+        else:
+            if connections[self.using].force_debug_cursor or settings.DEBUG:
+                self.connection.queries.append({'sql': repr(query)})
         return query
 
     def get_fields(self):
