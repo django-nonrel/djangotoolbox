@@ -213,7 +213,12 @@ class NonrelQuery(object):
             value = rhs_params
 
             packed = child.lhs.get_group_by_cols()[0]
-            alias, column = packed
+
+            if django.VERSION == (1, 7):
+                alias, column = packed
+            else:
+                alias = packed.alias
+                column = packed.target
             field = child.lhs.output_field
 
         opts = self.query.model._meta

@@ -3,15 +3,9 @@ import datetime
 
 from django.conf import settings
 
-# 1.8 Compatibility
-try:
-    from django.db.backends.base.base import BaseDatabaseWrapper
-    from django.db.backends.base.client import BaseDatabaseClient
-    from django.db.backends.base.features import BaseDatabaseFeatures
-    from django.db.backends.base.validation import BaseDatabaseValidation
-    from django.db.backends.base.introspection import BaseDatabaseIntrospection
-    from django.db.backends.base.operations import BaseDatabaseOperations
-except ImportError:
+import django
+
+if django.VERSION >= (1, 8):
     from django.db.backends import (
         BaseDatabaseFeatures,
         BaseDatabaseOperations,
@@ -19,6 +13,14 @@ except ImportError:
         BaseDatabaseClient,
         BaseDatabaseValidation,
         BaseDatabaseIntrospection)
+else:
+    from django.db.backends.base.base import BaseDatabaseWrapper
+    from django.db.backends.base.client import BaseDatabaseClient
+    from django.db.backends.base.features import BaseDatabaseFeatures
+    from django.db.backends.base.validation import BaseDatabaseValidation
+    from django.db.backends.base.introspection import BaseDatabaseIntrospection
+    from django.db.backends.base.operations import BaseDatabaseOperations
+
 from django.db.utils import DatabaseError
 from django.utils import timezone
 from django.utils.encoding import smart_text
