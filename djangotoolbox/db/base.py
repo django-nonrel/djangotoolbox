@@ -23,10 +23,11 @@ else:
 
 from django.db.utils import DatabaseError
 from django.utils import timezone
-try:
-    from django.utils.encoding import smart_text
-except ImportError:  # Django 1.4 compatibility
+
+if django.VERSION < (1, 5):
     from django.utils.encoding import smart_unicode as smart_text
+else:
+    from django.utils.encoding import smart_text
 
 from .creation import NonrelDatabaseCreation
 
