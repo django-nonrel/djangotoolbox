@@ -228,10 +228,6 @@ class NonrelQuery(object):
         # For parent.child_set queries the field held by the constraint
         # is the parent's primary key, while the field the filter
         # should consider is the child's foreign key field.
-        print("            alias:", alias, type(alias))
-        print("           column:", column, type(column))
-        print("     field.column:", field.column, type(field.column))
-        print("field.primary_key:", field.primary_key, type(field.primary_key))
         if column != field.column:
             if not field.primary_key:
                 raise DatabaseError("This database doesn't support filtering "
