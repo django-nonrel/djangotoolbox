@@ -428,9 +428,12 @@ class NonrelCompiler(SQLCompiler):
             assert len(aggregates) == 1
             aggregate = aggregates[0]
             if django.VERSION < (1, 8):
-                assert aggregate.sql_function == 'COUNT'
+                if aggregate.sql_function != 'COUNT':
+                    raise NotImplementedError("The database backend only supports count() queries.")
             else:
-                assert aggregate.function == 'COUNT'
+                if aggregate.function != 'COUNT':
+                    raise NotImplementedError("The database backend only supports count() queries.")
+
             opts = self.query.get_meta()
 
             if django.VERSION < (1, 8):
@@ -448,9 +451,6 @@ class NonrelCompiler(SQLCompiler):
                 return [count]
             elif result_type is MULTI:
                 return [[count]]
-
-        raise NotImplementedError("The database backend only supports "
-                                  "count() queries.")
 
     # ----------------------------------------------
     # Additional NonrelCompiler API
