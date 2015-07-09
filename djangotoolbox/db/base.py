@@ -31,7 +31,7 @@ if django.VERSION < (1, 5):
 else:
     from django.utils.encoding import smart_text, smart_bytes
 
-if django.VERSION < (1, 8):
+if django.VERSION < (1, 5):
     from django.utils.safestring import (SafeString as SafeBytes,
                                          SafeUnicode as SafeText,
                                          EscapeString as EscapeBytes,
