@@ -357,10 +357,10 @@ class NonrelDatabaseOperations(BaseDatabaseOperations):
 
         # Django wraps strings marked as safe or needed escaping,
         # convert them to just strings for type-inspecting back-ends.
-            if isinstance(value, (SafeBytes, EscapeBytes)):
-                value = smart_bytes(value)
-            elif isinstance(value, (SafeText, EscapeText)):
-                value = smart_text(value)
+        if isinstance(value, (SafeBytes, EscapeBytes)):
+            value = smart_bytes(value)
+        elif isinstance(value, (SafeText, EscapeText)):
+            value = smart_text(value)
 
         # Convert elements of collection fields.
         if field_kind in ('ListField', 'SetField', 'DictField',):
