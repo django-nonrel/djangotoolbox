@@ -23,11 +23,21 @@ else:
 
 from django.db.utils import DatabaseError
 from django.utils import timezone
+from django.utils.functional import Promise
 
 if django.VERSION < (1, 5):
-    from django.utils.encoding import smart_unicode as smart_text
+    from django.utils.encoding import (smart_unicode as smart_text,
+                                       smart_str as smart_bytes)
 else:
-    from django.utils.encoding import smart_text
+    from django.utils.encoding import smart_text, smart_bytes
+
+if django.VERSION < (1, 8):
+    from django.utils.safestring import (SafeString as SafeBytes,
+                                         SafeUnicode as SafeText,
+                                         EscapeString as EscapeBytes,
+                                         EscapeUnicode as EscapeText)
+else:
+    from django.utils.safestring import SafeBytes, SafeText, EscapeBytes, EscapeText
 
 from .creation import NonrelDatabaseCreation
 
@@ -330,7 +340,27 @@ class NonrelDatabaseOperations(BaseDatabaseOperations):
         if value is None:
             return None
 
-        value = smart_text(value)
+        # Force evaluation of lazy objects (e.g. lazy translation
+        # strings).
+        # Some back-ends pass values directly to the database driver,
+        # which may fail if it relies on type inspection and gets a
+        # functional proxy.
+        # This code relies on unicode cast in django.utils.functional
+        # just evaluating the wrapped function and doing nothing more.
+        # TODO: This has been partially fixed in vanilla with:
+        #       https://code.djangoproject.com/changeset/17698, however
+        #       still fails for proxies in lookups; reconsider in 1.4.
+        #       Also research cases of database operations not done
+        #       through the sql.Query.
+        if isinstance(value, Promise):
+            value = smart_text(value)
+
+        # Django wraps strings marked as safe or needed escaping,
+        # convert them to just strings for type-inspecting back-ends.
+            if isinstance(value, (SafeBytes, EscapeBytes)):
+                value = smart_bytes(value)
+            elif isinstance(value, (SafeText, EscapeText)):
+                value = smart_text(value)
 
         # Convert elements of collection fields.
         if field_kind in ('ListField', 'SetField', 'DictField',):
