@@ -394,17 +394,19 @@ class NonrelCompiler(SQLCompiler):
     # Public API
     # ----------------------------------------------
 
-    def results_iter(self):
+    def results_iter(self, results=None):
         """
         Returns an iterator over the results from executing query given
         to this compiler. Called by QuerySet methods.
         """
-        fields = self.get_fields()
-        try:
-            results = self.build_query(fields).fetch(
-                self.query.low_mark, self.query.high_mark)
-        except EmptyResultSet:
-            results = []
+
+        if results is None:
+            fields = self.get_fields()
+            try:
+                results = self.build_query(fields).fetch(
+                    self.query.low_mark, self.query.high_mark)
+            except EmptyResultSet:
+                results = []
 
         for entity in results:
             yield self._make_result(entity, fields)
@@ -417,6 +419,8 @@ class NonrelCompiler(SQLCompiler):
         Handles SQL-like aggregate queries. This class only emulates COUNT
         by using abstract NonrelQuery.count method.
         """
+        self.pre_sql_setup()
+
         aggregates = self.query.aggregate_select.values()
 
         # Simulate a count().
@@ -467,8 +471,9 @@ class NonrelCompiler(SQLCompiler):
                 value = field.get_default()
             else:
                 value = self.ops.value_from_db(value, field)
-                value = self.query.convert_values(value, field,
-                                                  self.connection)
+                # This is the default behavior of ``query.convert_values``
+                # until django 1.8, where multiple converters are a thing.
+                value = self.connection.ops.convert_values(value, field)
             if value is None and not field.null:
                 raise IntegrityError("Non-nullable field %s can't be None!" %
                                      field.name)
@@ -523,7 +528,7 @@ class NonrelCompiler(SQLCompiler):
             if connections[self.using].use_debug_cursor or (connections[self.using].use_debug_cursor is None and settings.DEBUG):
                 self.connection.queries.append({'sql': repr(query)})
         else:
-            if connections[self.using].force_debug_cursor or settings.DEBUG:
+            if connections[self.using].force_debug_cursor or (connections[self.using].force_debug_cursor is None and settings.DEBUG):
                 self.connection.queries.append({'sql': repr(query)})
         return query
 
@@ -610,6 +615,8 @@ class NonrelInsertCompiler(NonrelCompiler):
     """
 
     def execute_sql(self, return_id=False):
+        self.pre_sql_setup()
+
         to_insert = []
         pk_field = self.query.get_meta().pk
         for obj in self.query.objs:
@@ -655,6 +662,8 @@ class NonrelInsertCompiler(NonrelCompiler):
 class NonrelUpdateCompiler(NonrelCompiler):
 
     def execute_sql(self, result_type):
+        self.pre_sql_setup()
+
         values = []
         for field, _, value in self.query.values:
             if hasattr(value, 'prepare_database_save'):
