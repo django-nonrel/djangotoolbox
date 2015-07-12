@@ -1,6 +1,11 @@
 Changelog
 =========
 
+Version 1.7.0 (Jul 12, 2015)
+-------------
+
+* Add support for Django 1.7
+
 Version 1.6.2 (Dec 20, 2013)
 -------------
 
