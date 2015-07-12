@@ -42,14 +42,14 @@ class ModelTestCase(TestCase):
         current_state = object_list_to_table(
             columns, self.model.all())[1:]
         if not equal_lists(current_state, state_table):
-            print "DB state not valid:"
-            print "Current state:"
-            print columns
+            print("DB state not valid:")
+            print("Current state:")
+            print(columns)
             for state in current_state:
-                print state
-            print "Should be:"
+                print(state)
+            print("Should be:")
             for state in state_table:
-                print state
+                print(state)
             self.fail("DB state not valid.")
 
 
