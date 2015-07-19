@@ -1,10 +1,10 @@
 Changelog
 =========
 
-Version 1.8.0 (Jul 12, 2015)
+Version 1.8.0 (Jul 19, 2015)
 -------------
 
-* Added support for Django 1.8 in the db package
+* Added support for Django 1.8 in the db package (Thanks @kavdev)
 
 Version 1.7.0 (Jul 12, 2015)
 -------------
