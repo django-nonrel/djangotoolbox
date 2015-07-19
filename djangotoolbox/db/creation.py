@@ -1,4 +1,9 @@
-from django.db.backends.creation import BaseDatabaseCreation
+import django
+
+if django.VERSION < (1, 8):
+    from django.db.backends.creation import BaseDatabaseCreation
+else:
+    from django.db.backends.base.creation import BaseDatabaseCreation
 
 
 class NonrelDatabaseCreation(BaseDatabaseCreation):

@@ -2,18 +2,42 @@ from django.utils.six.moves import cPickle as pickle
 import datetime
 
 from django.conf import settings
-from django.db.backends import (
-    BaseDatabaseFeatures,
-    BaseDatabaseOperations,
-    BaseDatabaseWrapper,
-    BaseDatabaseClient,
-    BaseDatabaseValidation,
-    BaseDatabaseIntrospection)
+
+import django
+
+if django.VERSION < (1, 8):
+    from django.db.backends import (
+        BaseDatabaseFeatures,
+        BaseDatabaseOperations,
+        BaseDatabaseWrapper,
+        BaseDatabaseClient,
+        BaseDatabaseValidation,
+        BaseDatabaseIntrospection)
+else:
+    from django.db.backends.base.base import BaseDatabaseWrapper
+    from django.db.backends.base.client import BaseDatabaseClient
+    from django.db.backends.base.features import BaseDatabaseFeatures
+    from django.db.backends.base.validation import BaseDatabaseValidation
+    from django.db.backends.base.introspection import BaseDatabaseIntrospection
+    from django.db.backends.base.operations import BaseDatabaseOperations
+
 from django.db.utils import DatabaseError
-from django.utils.functional import Promise
-from django.utils.safestring import EscapeString, EscapeUnicode, SafeString, \
-    SafeUnicode
 from django.utils import timezone
+from django.utils.functional import Promise
+
+if django.VERSION < (1, 5):
+    from django.utils.encoding import (smart_unicode as smart_text,
+                                       smart_str as smart_bytes)
+else:
+    from django.utils.encoding import smart_text, smart_bytes
+
+if django.VERSION < (1, 5):
+    from django.utils.safestring import (SafeString as SafeBytes,
+                                         SafeUnicode as SafeText,
+                                         EscapeString as EscapeBytes,
+                                         EscapeUnicode as EscapeText)
+else:
+    from django.utils.safestring import SafeBytes, SafeText, EscapeBytes, EscapeText
 
 from .creation import NonrelDatabaseCreation
 
@@ -329,14 +353,14 @@ class NonrelDatabaseOperations(BaseDatabaseOperations):
         #       Also research cases of database operations not done
         #       through the sql.Query.
         if isinstance(value, Promise):
-            value = unicode(value)
+            value = smart_text(value)
 
         # Django wraps strings marked as safe or needed escaping,
         # convert them to just strings for type-inspecting back-ends.
-        if isinstance(value, (SafeString, EscapeString)):
-            value = str(value)
-        elif isinstance(value, (SafeUnicode, EscapeUnicode)):
-            value = unicode(value)
+        if isinstance(value, (SafeBytes, EscapeBytes)):
+            value = smart_bytes(value)
+        elif isinstance(value, (SafeText, EscapeText)):
+            value = smart_text(value)
 
         # Convert elements of collection fields.
         if field_kind in ('ListField', 'SetField', 'DictField',):
@@ -661,7 +685,7 @@ class FakeConnection(object):
 
 
 class Database(object):
-    class Error(StandardError):
+    class Error(Exception):
         pass
 
     class InterfaceError(Error):
@@ -687,6 +711,7 @@ class Database(object):
 
     class NotSupportedError(DatabaseError):
         pass
+
 
 class NonrelDatabaseWrapper(BaseDatabaseWrapper):
 
